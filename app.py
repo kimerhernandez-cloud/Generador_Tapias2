@@ -3,34 +3,21 @@ import re
 import html
 import streamlit as st
 
-# Configuración general
 st.set_page_config(page_title="Generador de Tapias", layout="centered")
 st.title("🎪 Generador de Etiquetas / Tapias")
 
 # ----------------------
-# FUNCIÓN ACTUALIZADA: OBTENER PRIMER APELLIDO
+# FUNCIÓN: OBTENER PRIMER APELLIDO
 # ----------------------
 def obtener_primer_apellido(nombre_completo):
-    """
-    Toma el nombre completo y devuelve SOLO EL PRIMER APELLIDO como identificador:
-    - Ej: "Juan Carlos Pérez López" → "PÉREZ"
-    - Ej: "María González" → "GONZÁLEZ"
-    - Si solo hay nombre, usa ese mismo
-    """
     if pd.isna(nombre_completo):
         return ""
-    # Limpia espacios y divide por palabras
     partes = str(nombre_completo).strip().split()
-    # Regla estándar: nombres → apellidos; el primer apellido suele ser la 3ra palabra,
-    # pero si hay pocas palabras, toma la última o la que corresponda como primer apellido
     if len(partes) >= 3:
-        # Nombre(s) + Primer apellido + [segundo apellido] → tomamos el 3er elemento
         return partes[2].upper()
     elif len(partes) == 2:
-        # Nombre + Primer apellido → tomamos el 2do elemento
         return partes[1].upper()
     else:
-        # Solo nombre o un solo dato → usamos lo que haya
         return partes[0].upper()
 
 def generar_html(df, titulo_etiqueta):
@@ -38,7 +25,6 @@ def generar_html(df, titulo_etiqueta):
     cards = []
 
     for (nombre, habitacion), group in grouped:
-        # ✅ AHORA USAMOS EL PRIMER APELLIDO COMO IDENTIFICADOR
         primer_apellido = obtener_primer_apellido(nombre)
         hab_str = str(habitacion).strip() if pd.notna(habitacion) else ""
         if hab_str.endswith('.0'):
@@ -47,7 +33,7 @@ def generar_html(df, titulo_etiqueta):
         pax = int(group['pax'].sum())
         obs_full = str(group['observaciones'].iloc[0]).strip() if pd.notna(group['observaciones'].iloc[0]) else ""
 
-        # Reglas para sobrescribir PAX
+        # Reglas PAX
         pax_rules = [
             (r'22\s*PAX', 22), (r'SON\s*PAX\s*07|SON\s*PAX\s*7', 7),
             (r'SON\s*03\s*PAX|SON\s*3\s*PAX', 3), (r'SON\s*4\s*PAX', 4),
@@ -61,7 +47,7 @@ def generar_html(df, titulo_etiqueta):
                 pax = val
                 break
 
-        # Hora y cambios de horario
+        # Hora y cambios
         hora_val = group['hora'].iloc[0]
         hora = hora_val.strftime('%H:%M') if isinstance(hora_val, pd.Timestamp) else str(hora_val)[:5]
         cambio_horario = False
@@ -74,22 +60,31 @@ def generar_html(df, titulo_etiqueta):
         elif re.search(r'llegar[aá]n\s+7\s*pm', obs_full, re.I):
             hora, cambio_horario = "19:00", True
 
-        # Etiquetas adicionales
+        # ----------------------
+        # ETIQUETAS ACTUALIZADAS
+        # ----------------------
         badges = []
+        # Residencia
         if re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_full.upper()):
-            badges.append('🔑RESIDENCE')
-        if re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE', obs_full.upper()):
-            badges.append('💎DIAMANTE')
+            badges.append('🔑 RESIDENCE')
+        # DIAMANTE / DIAMOND
+        if re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_full.upper()):
+            badges.append('💎 DIAMANTE')
+        # Seguimiento
         if re.search(r'SEGUIMIENTO', obs_full.upper()):
-            badges.append('🛑SEGUIMIENTO')
+            badges.append('🛑 SEGUIMIENTO')
+        # ✅ ALERGIAS / DIETAS → ETIQUETA: ⚠️ ALERGIAS
+        alergias_pat = r'CELIACO|CELIACA|CELIACOS|CELIACAS|GLUTEN FREE|GLUTEN|ALERGIAS|ALERGIA|ALERGIES|ALERGIE|SHELLFISH|MARISCOS|NUECES|NUTS|ALERGIA SEVERA|NO PORK|VEGETARIAN|VEGETARIANOS|CHOCOLATE'
+        if re.search(alergias_pat, obs_full.upper()):
+            badges.append('⚠️ ALERGIAS')
 
-        # Etiquetas automáticas HBD / NS / Day Pass
+        # Etiquetas especiales HBD / NS / Day Pass
         palabras_hbd = r'cumpleaños|festejando|birthday|birthday\'s|graduacion|graduation|pastel|vela|\byear\'s\b|\byear\b'
         es_hbd = re.search(palabras_hbd, obs_full, re.I)
         es_ns = re.search(r'nuevos?\s+socios?|nuevos\s+miembros|nuevo\s+socio', obs_full, re.I)
         es_daypass = re.search(r'day\s+pass', obs_full, re.I)
 
-        # Limpieza de observaciones
+        # Limpieza observaciones
         obs_clean = obs_full
         patrones_borrar = [
             r'Se informa código de vestir y tiempos\.?',
@@ -120,7 +115,6 @@ def generar_html(df, titulo_etiqueta):
         cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:9pt;margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
         badges_html = f'<div style="font-size:9pt;margin:0.1mm 0 0.3mm 0;">{" ".join(badges)}</div>' if badges else ''
 
-        # ✅ MUESTRA EL PRIMER APELLIDO COMO IDENTIFICADOR PRINCIPAL
         cards.append(f"""
 <div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:0.8mm;overflow:hidden;display:flex;flex-direction:column;gap:0.15mm;page-break-inside:avoid;">
 {badges_html if badges_html else ""}
@@ -145,7 +139,7 @@ body {{margin:0;padding:0;width:100%;}}
     return html_total
 
 # ----------------------
-# INTERFAZ DE USUARIO
+# INTERFAZ
 # ----------------------
 nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
 archivo = st.file_uploader("📂 Sube tu archivo Excel (.xlsx)", type="xlsx")
@@ -155,13 +149,13 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip())
 
-        st.success("✅ ¡Listo! Las etiquetas usan el PRIMER APELLIDO como identificador:")
+        st.success("✅ ¡Listo! Usa PRIMER APELLIDO + DIAMANTE + ⚠️ ALERGIAS:")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
             file_name="TAPIAS_HOJA_COMPLETA.html",
             mime="text/html"
         )
-        st.info("💡 Para obtener PDF: abre el archivo descargado en tu navegador → Imprimir → Guardar como PDF")
+        st.info("💡 Para PDF: abre el archivo → Imprimir → Guardar como PDF")
     except Exception as e:
-        st.error(f"❌ Error al procesar: {str(e)}")
+        st.error(f"❌ Error: {str(e)}")
