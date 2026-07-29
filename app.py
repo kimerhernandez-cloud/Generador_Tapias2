@@ -162,7 +162,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip())
 
-        st.success("✅ ¡Listo! s:")
+        st.success("✅ ¡Listo!:")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
