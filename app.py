@@ -4,7 +4,7 @@ import html
 import streamlit as st
 
 st.set_page_config(page_title="Generador de Tapias", layout="centered")
-st.title("🎪 Generador de Etiquetas / Tapias")
+st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
 def obtener_apellido(nombre_completo):
     if pd.isna(nombre_completo): return ""
@@ -70,5 +70,5 @@ if archivo and nombre_etiqueta.strip():
     df = pd.read_excel(archivo, engine="openpyxl")
     html_final = generar_html(df, nombre_etiqueta.strip())
     st.success("✅ ¡Listo! Descarga el archivo:")
-    st.download_button("📄 Descargar TAPIAS_HOJA_COMPLETA.html", html_final, "TAPIAS_HOJA_COMPLETA.html", "text/html")
+    st.download_button("📄 Descargar TAPIAS_RESTAURANTE", html_final, "TAPIAS_RESTAURANTE", "text/html")
     st.info("💡 Para PDF: abre el archivo en tu navegador → Imprimir → Guardar como PDF")
