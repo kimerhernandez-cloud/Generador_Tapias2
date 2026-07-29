@@ -61,7 +61,7 @@ def generar_html(df, titulo_etiqueta):
             hora, cambio_horario = "19:00", True
 
         # ----------------------
-        # ETIQUETAS CON EXCLUSIONES
+        # ETIQUETAS CON EXCLUSIONES COMPLETAS
         # ----------------------
         badges = []
         obs_upper = obs_full.upper()
@@ -76,12 +76,18 @@ def generar_html(df, titulo_etiqueta):
         if re.search(r'SEGUIMIENTO', obs_upper):
             badges.append('🛑 SEGUIMIENTO')
 
-        # ✅ REGLAS DE ALERGIAS: IGNORA "SIN ALERGIAS / NO ALERGIAS / NO ALERGIES"
-        tiene_negacion = re.search(r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA', obs_upper)
-        tiene_alergia = re.search(r'CELIACO|CELIACA|CELIACOS|CELIACAS|GLUTEN FREE|GLUTEN|ALERGIAS|ALERGIA|ALERGIES|ALERGIE|SHELLFISH|MARISCOS|NUECES|NUTS|ALERGIA SEVERA|NO PORK|VEGETARIAN|VEGETARIANOS|CHOCOLATE', obs_upper)
+        # ✅ REGLAS DE ALERGIAS: IGNORA TODAS LAS NEGACIONES Y MENSAJES DE PROCEDIMIENTO
+        tiene_negacion_o_procedimiento = re.search(
+            r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS',
+            obs_upper
+        )
+        tiene_alergia_real = re.search(
+            r'CELIACO|CELIACA|CELIACOS|CELIACAS|GLUTEN FREE|GLUTEN|ALERGIA|ALERGIES|ALERGIE|SHELLFISH|MARISCOS|NUECES|NUTS|ALERGIA SEVERA|NO PORK|VEGETARIAN|VEGETARIANOS|CHOCOLATE',
+            obs_upper
+        )
         
-        # Solo muestra la etiqueta si SÍ hay alergia/dieta y NO dice que no tiene
-        if tiene_alergia and not tiene_negacion:
+        # Solo muestra la etiqueta si SÍ hay alergia/dieta real y NO hay negación ni procedimiento
+        if tiene_alergia_real and not tiene_negacion_o_procedimiento:
             badges.append('⚠️ ALERGIAS')
 
         # Etiquetas especiales HBD / NS / Day Pass
@@ -98,6 +104,7 @@ def generar_html(df, titulo_etiqueta):
             r'Sin alergias, ni dietas? especiales\.?', r'Sin alergias, ni dieta especial\.?',
             r'No alergias, No dietas especiales\.?', r'sin alergias reportadas', r'SIN ALERGIAS REPORTADAS',
             r'Sin alergias reportadas', r'sin observaciones especiales', r'NO ALERGIAS',
+            r'CONFIRMAR ALERGIAS', r'PREGUNTAR ALERGIAS',
             r'Son\s*\d*\s*pax[,.\s]*', r'Son\s*\d*\s*pas[,.\s]*',
             r',\s*Huésped enterado de políticas de cancelación.*?$', r',\s*Se informa código de vestir.*?$'
         ]
@@ -155,7 +162,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip())
 
-        st.success("✅ ¡Listo! Ignora 'SIN ALERGIAS' y detecta correctamente:")
+        st.success("✅ ¡Listo! s:")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
