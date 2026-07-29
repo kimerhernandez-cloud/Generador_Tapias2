@@ -70,5 +70,5 @@ if archivo and nombre_etiqueta.strip():
     df = pd.read_excel(archivo, engine="openpyxl")
     html_final = generar_html(df, nombre_etiqueta.strip())
     st.success("✅ ¡Listo! Descarga el archivo:")
-    st.download_button("📄 Descargar TAPIAS_RESTAURANTE", html_final, "TAPIAS_RESTAURANTE", "text/html")
+    st.download_button("📄 Descargar TAPIAS_RESTAURANTE", html_final, "TAPIAS_RESTAURANTE.html", "text/html")
     st.info("💡 Para PDF: abre el archivo en tu navegador → Imprimir → Guardar como PDF")
