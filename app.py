@@ -67,7 +67,7 @@ nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
 archivo = st.file_uploader("📂 Sube tu archivo Excel (.xlsx)", type="xlsx")
 
 if archivo and nombre_etiqueta.strip():
-    df = pd.read_excel(archivo)
+    df = pd.read_excel(archivo, engine="openpyxl")
     html_final = generar_html(df, nombre_etiqueta.strip())
     st.success("✅ ¡Listo! Descarga el archivo:")
     st.download_button("📄 Descargar TAPIAS_HOJA_COMPLETA.html", html_final, "TAPIAS_HOJA_COMPLETA.html", "text/html")
