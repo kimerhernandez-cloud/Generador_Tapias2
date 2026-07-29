@@ -61,7 +61,7 @@ def generar_html(df, titulo_etiqueta):
             hora, cambio_horario = "19:00", True
 
         # ----------------------
-        # ETIQUETAS CON EXCLUSIONES COMPLETAS
+        # ETIQUETAS CON TODAS LAS EXCLUSIONES
         # ----------------------
         badges = []
         obs_upper = obs_full.upper()
@@ -73,9 +73,9 @@ def generar_html(df, titulo_etiqueta):
         if re.search(r'SEGUIMIENTO', obs_upper):
             badges.append('🛑 SEGUIMIENTO')
 
-        # ✅ IGNORA: SIN / NO / CONFIRMAR / PREGUNTAR / VERIFICAR ALERGIAS
+        # ✅ AHORA TAMBIÉN IGNORA: ALERGIAS POR CONFIRMAR
         tiene_exclusion = re.search(
-            r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS|VERIFICAR\s+ALERGIAS',
+            r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS|VERIFICAR\s+ALERGIAS|ALERGIAS\s+POR\s+CONFIRMAR',
             obs_upper
         )
         tiene_restriccion_real = re.search(
@@ -100,7 +100,7 @@ def generar_html(df, titulo_etiqueta):
             r'Sin alergias, ni dietas? especiales\.?', r'Sin alergias, ni dieta especial\.?',
             r'No alergias, No dietas especiales\.?', r'sin alergias reportadas', r'SIN ALERGIAS REPORTADAS',
             r'Sin alergias reportadas', r'sin observaciones especiales', r'NO ALERGIAS',
-            r'CONFIRMAR ALERGIAS', r'PREGUNTAR ALERGIAS', r'VERIFICAR ALERGIAS',
+            r'CONFIRMAR ALERGIAS', r'PREGUNTAR ALERGIAS', r'VERIFICAR ALERGIAS', r'ALERGIAS POR CONFIRMAR',
             r'Son\s*\d*\s*pax[,.\s]*', r'Son\s*\d*\s*pas[,.\s]*',
             r',\s*Huésped enterado de políticas de cancelación.*?$', r',\s*Se informa código de vestir.*?$'
         ]
@@ -158,7 +158,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip())
 
-        st.success("✅ ¡Listo! Ignora VERIFICAR / CONFIRMAR / PREGUNTAR y negaciones:")
+        st.success("✅ ¡Listo!:")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
