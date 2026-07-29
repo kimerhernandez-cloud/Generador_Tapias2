@@ -61,21 +61,27 @@ def generar_html(df, titulo_etiqueta):
             hora, cambio_horario = "19:00", True
 
         # ----------------------
-        # ETIQUETAS ACTUALIZADAS
+        # ETIQUETAS CON EXCLUSIONES
         # ----------------------
         badges = []
+        obs_upper = obs_full.upper()
+
         # Residencia
-        if re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_full.upper()):
+        if re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper):
             badges.append('🔑 RESIDENCE')
         # DIAMANTE / DIAMOND
-        if re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_full.upper()):
+        if re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_upper):
             badges.append('💎 DIAMANTE')
         # Seguimiento
-        if re.search(r'SEGUIMIENTO', obs_full.upper()):
+        if re.search(r'SEGUIMIENTO', obs_upper):
             badges.append('🛑 SEGUIMIENTO')
-        # ✅ ALERGIAS / DIETAS → ETIQUETA: ⚠️ ALERGIAS
-        alergias_pat = r'CELIACO|CELIACA|CELIACOS|CELIACAS|GLUTEN FREE|GLUTEN|ALERGIAS|ALERGIA|ALERGIES|ALERGIE|SHELLFISH|MARISCOS|NUECES|NUTS|ALERGIA SEVERA|NO PORK|VEGETARIAN|VEGETARIANOS|CHOCOLATE'
-        if re.search(alergias_pat, obs_full.upper()):
+
+        # ✅ REGLAS DE ALERGIAS: IGNORA "SIN ALERGIAS / NO ALERGIAS / NO ALERGIES"
+        tiene_negacion = re.search(r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA', obs_upper)
+        tiene_alergia = re.search(r'CELIACO|CELIACA|CELIACOS|CELIACAS|GLUTEN FREE|GLUTEN|ALERGIAS|ALERGIA|ALERGIES|ALERGIE|SHELLFISH|MARISCOS|NUECES|NUTS|ALERGIA SEVERA|NO PORK|VEGETARIAN|VEGETARIANOS|CHOCOLATE', obs_upper)
+        
+        # Solo muestra la etiqueta si SÍ hay alergia/dieta y NO dice que no tiene
+        if tiene_alergia and not tiene_negacion:
             badges.append('⚠️ ALERGIAS')
 
         # Etiquetas especiales HBD / NS / Day Pass
@@ -149,7 +155,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip())
 
-        st.success("✅ ¡Listo! Usa PRIMER APELLIDO + DIAMANTE + ⚠️ ALERGIAS:")
+        st.success("✅ ¡Listo! Ignora 'SIN ALERGIAS' y detecta correctamente:")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
