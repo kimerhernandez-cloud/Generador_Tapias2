@@ -20,7 +20,7 @@ def obtener_primer_apellido(nombre_completo):
     else:
         return partes[0].upper()
 
-def generar_html(df, titulo_etiqueta, limite_mesa_grande):
+def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion):
     grouped = df.groupby(['nombre_reserva', 'habitacion'], sort=False).agg({
         'pax': 'sum',
         'hora': 'first',
@@ -28,6 +28,20 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
     }).reset_index()
     
     cards = []
+
+    # AJUSTES BASE POR ORIENTACIÓN
+    if orientacion == "Vertical":
+        alto_tarjeta = "27mm"
+        base_apellido = "10pt"
+        base_datos = "10.5pt"
+        base_badges = "7pt"
+        base_obs = "7.5pt"
+    else:
+        alto_tarjeta = "29mm"
+        base_apellido = "11.5pt"
+        base_datos = "12pt"
+        base_badges = "8pt"
+        base_obs = "8.5pt"
 
     for _, fila in grouped.iterrows():
         nombre = fila['nombre_reserva']
@@ -41,7 +55,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         if hab_str.endswith('.0'):
             hab_str = hab_str[:-2]
 
-        # Reglas especiales PAX desde observaciones
+        # Reglas especiales PAX
         pax_rules = [
             (r'22\s*PAX', 22), (r'SON\s*PAX\s*07|SON\s*PAX\s*7', 7),
             (r'SON\s*03\s*PAX|SON\s*3\s*PAX', 3), (r'SON\s*4\s*PAX', 4),
@@ -55,7 +69,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
                 pax = val
                 break
 
-        # FORMATO HORA + FILTRO ANTES DE 22:00
+        # FORMATO HORA
         hora = ""
         if isinstance(hora_val, pd.Timestamp):
             hora = hora_val.strftime('%H:%M')
@@ -85,16 +99,15 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_upper))
         
-        estilo_badge_azul = "display:inline-block;border:1px solid #4682B4;background-color:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:8pt;font-weight:bold;margin-right:2px;"
         if es_residence:
-            badges.append(f'<span style="{estilo_badge_azul}">🔑 RESIDENCE</span>')
+            badges.append('🔑 RESIDENCE')
         if es_diamante:
-            badges.append(f'<span style="{estilo_badge_azul}">💎 DIAMANTE</span>')
+            badges.append('💎 DIAMANTE')
         if re.search(r'SEGUIMIENTO', obs_upper):
             badges.append('🛑 SEGUIMIENTO')
 
         tiene_exclusion = re.search(
-            r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS|VERIFICAR\s+ALERGIAS|ALERGIAS\s+POR\s+CONFIRMAR',
+            r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS|VERIFICAR ALERGIAS|ALERGIAS\s+POR\s+CONFIRMAR',
             obs_upper
         )
         tiene_restriccion_real = re.search(
@@ -108,7 +121,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         es_ns = re.search(r'nuevos?\s+socios?|nuevos\s+miembros|nuevo\s+socio', obs_full, re.I)
         es_daypass = re.search(r'day\s+pass', obs_full, re.I)
 
-        # LIMPIEZA MEJORADA: se agrega el texto completo de políticas
+        # LIMPIEZA DE OBSERVACIONES
         obs_clean = obs_full
         patrones_borrar = [
             r'Se informa código de vestir y tiempos\.?',
@@ -125,67 +138,105 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
             obs_clean = re.sub(pat, '', obs_clean, flags=re.I | re.DOTALL)
         obs_clean = re.sub(r'\s+', ' ', obs_clean).strip().strip(',.;:')
 
-        # RECUADRO ROJO AMPLIADO: desde "PX:" hasta el número
+        # 🧠 AJUSTE INTELIGENTE POR TARJETA: calcula el tamaño según carga de información
+        cantidad_etiquetas = len(badges) + sum([es_hbd, es_ns, es_daypass, cambio_horario])
+        longitud_texto = len(obs_clean)
+
+        # Reglas de reducción automática individual
+        if cantidad_etiquetas >= 3 or longitud_texto > 100:
+            # Mucha información: tamaño reducido
+            t_apellido = "9pt"
+            t_datos = "9.5pt"
+            t_badges = "6.5pt"
+            t_obs = "6.5pt"
+        elif cantidad_etiquetas >= 2 or longitud_texto > 60:
+            # Información media: tamaño intermedio
+            t_apellido = "9.5pt"
+            t_datos = "10pt"
+            t_badges = "7pt"
+            t_obs = "7pt"
+        else:
+            # Poca información: tamaño normal
+            t_apellido = base_apellido
+            t_datos = base_datos
+            t_badges = base_badges
+            t_obs = base_obs
+
+        # RECUADRO ROJO PAX
         etiqueta_pax = f"<b>PX:</b> {pax}"
         estilo_pax_completo = ""
         if pax >= limite_mesa_grande:
             estilo_pax_completo = "display:inline-block;border:1px solid #cc0000;background-color:#FFECEC;color:#cc0000;padding:1px 5px;border-radius:2px;font-weight:bold;"
             etiqueta_pax = f'<span style="{estilo_pax_completo}"><b>PX:</b> {pax}</span>'
 
-        # ENCABEZADO: FONDO AZUL CIELO SI ES RESIDENCE O DIAMANTE
-        estilo_encabezado = "padding: 1px 3px; border-radius: 2px; flex-wrap: wrap; gap: 1px;"
+        # ENCABEZADO
+        estilo_encabezado = f"padding: 1px 3px; border-radius: 2px; flex-wrap: wrap; gap: 1px; font-size:{t_badges};"
         if es_residence or es_diamante:
             estilo_encabezado += "background-color:#E0F7FF;border:1px solid #4682B4;"
 
+        estilo_badge_azul = f"display:inline-block;border:1px solid #4682B4;background-color:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:{t_badges};font-weight:bold;margin-right:2px;"
+        badges_html = []
+        if es_residence:
+            badges_html.append(f'<span style="{estilo_badge_azul}">🔑 RESIDENCE</span>')
+        if es_diamante:
+            badges_html.append(f'<span style="{estilo_badge_azul}">💎 DIAMANTE</span>')
+        if re.search(r'SEGUIMIENTO', obs_upper):
+            badges_html.append('🛑 SEGUIMIENTO')
+        if tiene_restriccion_real and not tiene_exclusion:
+            badges_html.append('⚠️ ALERGIAS')
+
         cabecera = f'''
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;font-size:8.5pt;line-height:1.1;{estilo_encabezado}">
-            <span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges) if badges else ""}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{estilo_encabezado}">
+            <span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges_html) if badges_html else ""}</span>
             <span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span>
         </div>'''
 
-        # ETIQUETAS ESPECIALES CENTRADAS
+        # ETIQUETAS ESPECIALES
         etiqueta_especial = ""
         if es_hbd:
-            etiqueta_especial = '<div style="font-weight:bold;font-size:12pt;text-align:center;color:#c00;margin:0.3mm 0;white-space:nowrap;">🎂 HBD</div>'
+            etiqueta_especial = f'<div style="font-weight:bold;font-size:10pt;text-align:center;color:#c00;margin:0.2mm 0;white-space:nowrap;">🎂 HBD</div>'
             obs_clean = ""
         if es_ns:
-            etiqueta_especial = '<div style="font-weight:bold;font-size:11pt;text-align:center;color:#006;margin:0.3mm 0;white-space:nowrap;">🆕 NS</div>'
+            etiqueta_especial = f'<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#006;margin:0.2mm 0;white-space:nowrap;">🆕 NS</div>'
             obs_clean = ""
         if es_daypass:
-            etiqueta_especial = '<div style="font-weight:bold;font-size:11pt;text-align:center;color:#333;margin:0.3mm 0;white-space:nowrap;">🎟️ Day Pass</div>'
+            etiqueta_especial = f'<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#333;margin:0.2mm 0;white-space:nowrap;">🎟️ Day Pass</div>'
             obs_clean = ""
 
-        # ESPACIO AMPLIADO + LETRA COMO ESTABA
-        if len(obs_clean) < 50:
-            tam_obs = '8.5pt'
-        elif len(obs_clean) < 85:
-            tam_obs = '8pt'
-        elif len(obs_clean) < 120:
-            tam_obs = '7.5pt'
+        # TAMAÑO FINAL DE OBSERVACIONES
+        if len(obs_clean) < 40:
+            tam_obs_final = t_obs
+        elif len(obs_clean) < 80:
+            tam_obs_final = str(float(t_obs.replace('pt','')) - 0.5) + 'pt'
         else:
-            tam_obs = '7pt'
+            tam_obs_final = str(float(t_obs.replace('pt','')) - 1) + 'pt'
 
-        obs_html = f'<div style="font-size:{tam_obs};line-height:1.4;min-height:9mm;max-height:18mm;overflow:hidden;word-wrap:break-word;margin-top:0.5mm;padding:0 1px;">{html.escape(obs_clean)}</div>' if obs_clean else ''
-        cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:8.5pt;margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
+        obs_html = f'<div style="font-size:{tam_obs_final};line-height:1.3;min-height:7mm;max-height:15mm;overflow:hidden;word-wrap:break-word;margin-top:0.3mm;padding:0 1px;">{html.escape(obs_clean)}</div>' if obs_clean else ''
+        cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:{t_badges};margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
 
         cards.append(f"""
-<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1mm;overflow:hidden;display:flex;flex-direction:column;gap:0.2mm;page-break-inside:avoid;">
+<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1mm;overflow:hidden;display:flex;flex-direction:column;gap:0.1mm;page-break-inside:avoid;">
 {cabecera}
-<div style="font-weight:bold;font-size:11.5pt;line-height:1.1;margin-top:0.4mm;">{html.escape(primer_apellido)}</div>
-<div style="font-size:12pt;"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>
-<div style="font-size:12pt;"><b>Hora:</b> {hora}</div>
+<div style="font-weight:bold;font-size:{t_apellido};line-height:1.1;margin-top:0.2mm;">{html.escape(primer_apellido)}</div>
+<div style="font-size:{t_datos};"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>
+<div style="font-size:{t_datos};"><b>Hora:</b> {hora}</div>
 {cambio_html}
 {etiqueta_especial}
 {obs_html}
 </div>""".replace('\n',''))
 
+    # CONFIGURACIÓN DE HOJA
+    config_pagina = "size: letter; margin: 3mm;"
+    if orientacion == "Horizontal":
+        config_pagina = "size: letter landscape; margin: 3mm;"
+
     html_total = f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Tapias - {html.escape(titulo_etiqueta)}</title>
 <style>
-@page {{ size: letter; margin: 3mm; }}
+@page {{ {config_pagina} }}
 * {{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
 body {{margin:0;padding:0;width:100%;font-family:Arial, sans-serif;}}
-.grid {{display:grid;grid-template-columns:repeat(6, 1fr);grid-auto-rows:29mm;gap:0.5mm;width:100%;}}
+.grid {{display:grid;grid-template-columns:repeat(6, 1fr);grid-auto-rows:{alto_tarjeta};gap:0.5mm;width:100%;}}
 </style>
 </head><body><div class="grid">{"".join(cards)}</div></body></html>"""
     return html_total
@@ -194,21 +245,23 @@ body {{margin:0;padding:0;width:100%;font-family:Arial, sans-serif;}}
 # INTERFAZ
 # ----------------------
 nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
+orientacion = st.radio("📐 Orientación de impresión:", ["Horizontal (recomendado)", "Vertical"], index=0)
 limite_mesa_grande = st.number_input("🔴 Mesa grande: resaltar PX desde ≥", min_value=5, value=7, step=1)
 archivo = st.file_uploader("📂 Sube tu archivo Excel (.xlsx)", type="xlsx")
 
 if archivo and nombre_etiqueta.strip():
     try:
+        orient_simple = orientacion.split()[0]
         df = pd.read_excel(archivo, engine="openpyxl")
-        html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande)
+        html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orient_simple)
 
-        st.success(f"✅ ¡Listo!")
+        st.success(f"✅ ¡Listo! Ajuste automático individual activado")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
             file_name="TAPIAS_HOJA_COMPLETA.html",
             mime="text/html"
         )
-        st.info("💡 Para PDF: abre el archivo → Imprimir → Destino: Guardar como PDF → Márgenes: Ninguno")
+        st.info("💡 Cada tapia ajusta su letra sola: más información → letra más pequeña, sin cortes.")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
