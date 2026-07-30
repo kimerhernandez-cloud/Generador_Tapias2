@@ -79,7 +79,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         elif re.search(r'llegar[aá]n\s+7\s*pm', obs_full, re.I):
             hora, cambio_horario = "19:00", True
 
-        # Etiquetas especiales CON RECUADRO AZUL CIELO SOLO PARA LA ETIQUETA
+        # Etiquetas especiales
         badges = []
         obs_upper = obs_full.upper()
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
@@ -124,14 +124,18 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
             obs_clean = re.sub(pat, '', obs_clean, flags=re.I | re.DOTALL)
         obs_clean = re.sub(r'\s+', ' ', obs_clean).strip().strip(',.;:')
 
-        # ESTILO PX: SOLO SE RESALTA EN ROJO SI CUMPLE EL LÍMITE (ya no se pinta azul por Residence/Diamante)
+        # ESTILO PX: SOLO RECUADRO ROJO SI SUPERA EL LÍMITE
         estilo_pax = ""
         if pax >= limite_mesa_grande:
             estilo_pax = "display:inline-block;border:1px solid #cc0000;background-color:#FFECEC;color:#cc0000;padding:1px 5px;border-radius:2px;font-weight:bold;"
 
-        # Cabecera
+        # 🆕 ENCABEZADO: FONDO AZUL CIELO SI ES RESIDENCE O DIAMANTE
+        estilo_encabezado = "padding: 1.5px 4px; border-radius: 2px;"
+        if es_residence or es_diamante:
+            estilo_encabezado += "background-color:#E0F7FF;border:1px solid #4682B4;"
+
         cabecera = f'''
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5pt;line-height:1.1;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5pt;line-height:1.1;{estilo_encabezado}">
             <span>{" ".join(badges) if badges else ""}</span>
             <span style="font-weight:bold;">{html.escape(titulo_etiqueta)}</span>
         </div>'''
@@ -147,8 +151,16 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
             etiqueta_especial = '<div style="font-weight:bold;font-size:12pt;text-align:center;color:#333;margin:0.5mm 0;">🎟️ Day Pass</div>'
             obs_clean = ""
 
-        # MEJORAS EN OBSERVACIONES: más espacio, mejor tamaño y separación
-        tam_obs = '8.5pt' if len(obs_clean) < 60 else '8pt' if len(obs_clean) < 100 else '7.5pt'
+        # 🆕 OBSERVACIONES: LETRA SE AJUSTA INTELIGENTEMENTE SEGÚN LONGITUD
+        if len(obs_clean) < 50:
+            tam_obs = '8.5pt'
+        elif len(obs_clean) < 80:
+            tam_obs = '8pt'
+        elif len(obs_clean) < 110:
+            tam_obs = '7.5pt'
+        else:
+            tam_obs = '7pt'
+
         obs_html = f'<div style="font-size:{tam_obs};line-height:1.4;min-height:7mm;max-height:15mm;overflow:hidden;word-wrap:break-word;margin-top:0.5mm;padding-right:1px;">{html.escape(obs_clean)}</div>' if obs_clean else ''
         cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:8.5pt;margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
 
