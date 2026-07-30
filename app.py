@@ -79,14 +79,20 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         elif re.search(r'llegar[aá]n\s+7\s*pm', obs_full, re.I):
             hora, cambio_horario = "19:00", True
 
-        # Etiquetas especiales
+        # Etiquetas especiales CON RECUADRO AZUL CIELO para RESIDENCE y DIAMANTE
         badges = []
         obs_upper = obs_full.upper()
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_upper))
-        if es_residence: badges.append('🔑 RESIDENCE')
-        if es_diamante: badges.append('💎 DIAMANTE')
-        if re.search(r'SEGUIMIENTO', obs_upper): badges.append('🛑 SEGUIMIENTO')
+        
+        # Aplicamos recuadro azul cielo a estas etiquetas
+        estilo_badge_azul = "display:inline-block;border:1px solid #4682B4;background-color:#E0F7FF;color:#005580;padding:1px 4px;border-radius:2px;font-size:8pt;font-weight:bold;margin-right:3px;"
+        if es_residence:
+            badges.append(f'<span style="{estilo_badge_azul}">🔑 RESIDENCE</span>')
+        if es_diamante:
+            badges.append(f'<span style="{estilo_badge_azul}">💎 DIAMANTE</span>')
+        if re.search(r'SEGUIMIENTO', obs_upper):
+            badges.append('🛑 SEGUIMIENTO')
 
         tiene_exclusion = re.search(
             r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS|VERIFICAR\s+ALERGIAS|ALERGIAS\s+POR\s+CONFIRMAR',
@@ -119,12 +125,14 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
             obs_clean = re.sub(pat, '', obs_clean, flags=re.I | re.DOTALL)
         obs_clean = re.sub(r'\s+', ' ', obs_clean).strip().strip(',.;:')
 
-        # Resaltar PX: rojo si mesa grande, azul si Residence/Diamante
+        # ESTILO PX CON RECUADRO: ROJO si mesa grande, AZUL si Residence/Diamante
         estilo_pax = ""
         if pax >= limite_mesa_grande:
-            estilo_pax = "text-decoration:underline;text-decoration-color:red;color:red;font-weight:bold;"
+            # Recuadro rojo para mesas grandes
+            estilo_pax = "display:inline-block;border:1px solid #cc0000;background-color:#FFECEC;color:#cc0000;padding:1px 5px;border-radius:2px;font-weight:bold;"
         elif es_residence or es_diamante:
-            estilo_pax = "text-decoration:underline;text-decoration-color:#87CEEB;color:#0077be;font-weight:bold;"
+            # Recuadro azul cielo para Residence/Diamante
+            estilo_pax = "display:inline-block;border:1px solid #0077be;background-color:#E0F7FF;color:#005580;padding:1px 5px;border-radius:2px;font-weight:bold;"
 
         # Cabecera: etiquetas a la izquierda, título a la derecha
         cabecera = f'''
@@ -172,7 +180,7 @@ body {{margin:0;padding:0;width:100%;}}
     return html_total
 
 # ----------------------
-# INTERFAZ ACTUALIZADA
+# INTERFAZ (SIN CAMBIOS)
 # ----------------------
 nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
 limite_mesa_grande = st.number_input("🔴 Mesa grande: resaltar PX desde ≥", min_value=5, value=7, step=1)
@@ -183,7 +191,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande)
 
-        st.success(f"✅ ¡Listo!")
+        st.success(f"✅ ¡Listo! Se resaltarán en ROJO los PX desde {limite_mesa_grande} en adelante")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
