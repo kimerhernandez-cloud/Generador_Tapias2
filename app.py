@@ -85,7 +85,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_upper))
         
-        estilo_badge_azul = "display:inline-block;border:1px solid #4682B4;background-color:#E0F7FF;color:#005580;padding:1px 4px;border-radius:2px;font-size:8pt;font-weight:bold;margin-right:3px;"
+        estilo_badge_azul = "display:inline-block;border:1px solid #4682B4;background-color:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:7.8pt;font-weight:bold;margin-right:2px;"
         if es_residence:
             badges.append(f'<span style="{estilo_badge_azul}">🔑 RESIDENCE</span>')
         if es_diamante:
@@ -127,49 +127,52 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
         # ESTILO PX: SOLO RECUADRO ROJO SI SUPERA EL LÍMITE
         estilo_pax = ""
         if pax >= limite_mesa_grande:
-            estilo_pax = "display:inline-block;border:1px solid #cc0000;background-color:#FFECEC;color:#cc0000;padding:1px 5px;border-radius:2px;font-weight:bold;"
+            estilo_pax = "display:inline-block;border:1px solid #cc0000;background-color:#FFECEC;color:#cc0000;padding:1px 4px;border-radius:2px;font-weight:bold;"
 
-        # 🆕 ENCABEZADO: FONDO AZUL CIELO SI ES RESIDENCE O DIAMANTE
-        estilo_encabezado = "padding: 1.5px 4px; border-radius: 2px;"
+        # ENCABEZADO: FONDO AZUL CIELO SI ES RESIDENCE O DIAMANTE
+        estilo_encabezado = "padding: 1px 3px; border-radius: 2px; flex-wrap: wrap; gap: 1px;"
         if es_residence or es_diamante:
             estilo_encabezado += "background-color:#E0F7FF;border:1px solid #4682B4;"
 
         cabecera = f'''
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:8.5pt;line-height:1.1;{estilo_encabezado}">
-            <span>{" ".join(badges) if badges else ""}</span>
-            <span style="font-weight:bold;">{html.escape(titulo_etiqueta)}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;font-size:8pt;line-height:1.1;{estilo_encabezado}">
+            <span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges) if badges else ""}</span>
+            <span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span>
         </div>'''
 
+        # ETIQUETAS ESPECIALES CENTRADAS Y SIN CORTES
         etiqueta_especial = ""
         if es_hbd:
-            etiqueta_especial = '<div style="font-weight:bold;font-size:13pt;text-align:center;color:#c00;margin:0.5mm 0;">🎂 HBD</div>'
+            etiqueta_especial = '<div style="font-weight:bold;font-size:12pt;text-align:center;color:#c00;margin:0.3mm 0;white-space:nowrap;overflow:visible;">🎂 HBD</div>'
             obs_clean = ""
         if es_ns:
-            etiqueta_especial = '<div style="font-weight:bold;font-size:12pt;text-align:center;color:#006;margin:0.5mm 0;">🆕 NS</div>'
+            etiqueta_especial = '<div style="font-weight:bold;font-size:11pt;text-align:center;color:#006;margin:0.3mm 0;white-space:nowrap;overflow:visible;">🆕 NS</div>'
             obs_clean = ""
         if es_daypass:
-            etiqueta_especial = '<div style="font-weight:bold;font-size:12pt;text-align:center;color:#333;margin:0.5mm 0;">🎟️ Day Pass</div>'
+            etiqueta_especial = '<div style="font-weight:bold;font-size:11pt;text-align:center;color:#333;margin:0.3mm 0;white-space:nowrap;overflow:visible;">🎟️ Day Pass</div>'
             obs_clean = ""
 
-        # 🆕 OBSERVACIONES: LETRA SE AJUSTA INTELIGENTEMENTE SEGÚN LONGITUD
-        if len(obs_clean) < 50:
+        # AJUSTE INTELIGENTE DE OBSERVACIONES: más espacio y letra adaptativa
+        if len(obs_clean) < 45:
             tam_obs = '8.5pt'
-        elif len(obs_clean) < 80:
+        elif len(obs_clean) < 75:
             tam_obs = '8pt'
-        elif len(obs_clean) < 110:
+        elif len(obs_clean) < 105:
             tam_obs = '7.5pt'
-        else:
+        elif len(obs_clean) < 140:
             tam_obs = '7pt'
+        else:
+            tam_obs = '6.8pt'
 
-        obs_html = f'<div style="font-size:{tam_obs};line-height:1.4;min-height:7mm;max-height:15mm;overflow:hidden;word-wrap:break-word;margin-top:0.5mm;padding-right:1px;">{html.escape(obs_clean)}</div>' if obs_clean else ''
-        cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:8.5pt;margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
+        obs_html = f'<div style="font-size:{tam_obs};line-height:1.35;min-height:8mm;max-height:16mm;overflow:hidden;word-wrap:break-word;margin-top:0.4mm;padding:0 1px;">{html.escape(obs_clean)}</div>' if obs_clean else ''
+        cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:8pt;margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
 
         cards.append(f"""
-<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:0.8mm;overflow:hidden;display:flex;flex-direction:column;gap:0.3mm;page-break-inside:avoid;">
+<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1mm;overflow:hidden;display:flex;flex-direction:column;gap:0.2mm;page-break-inside:avoid;">
 {cabecera}
-<div style="font-weight:bold;font-size:11.5pt;line-height:1.1;margin-top:0.5mm;">{html.escape(primer_apellido)}</div>
-<div style="font-size:12pt;"><b>Hab:</b> {html.escape(hab_str)} | <b>PX:</b> <span style="{estilo_pax}">{pax}</span></div>
-<div style="font-size:12pt;"><b>Hora:</b> {hora}</div>
+<div style="font-weight:bold;font-size:11pt;line-height:1.1;margin-top:0.3mm;">{html.escape(primer_apellido)}</div>
+<div style="font-size:11pt;"><b>Hab:</b> {html.escape(hab_str)} | <b>PX:</b> <span style="{estilo_pax}">{pax}</span></div>
+<div style="font-size:11pt;"><b>Hora:</b> {hora}</div>
 {cambio_html}
 {etiqueta_especial}
 {obs_html}
@@ -179,9 +182,9 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande):
 <html><head><meta charset="UTF-8"><title>Tapias - {html.escape(titulo_etiqueta)}</title>
 <style>
 @page {{ size: letter; margin: 3mm; }}
-* {{box-sizing:border-box;margin:0;padding:0;}}
-body {{margin:0;padding:0;width:100%;}}
-.grid {{display:grid;grid-template-columns:repeat(6, 1fr);grid-auto-rows:28mm;gap:0.5mm;width:100%;}}
+* {{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+body {{margin:0;padding:0;width:100%;font-family:Arial, sans-serif;}}
+.grid {{display:grid;grid-template-columns:repeat(6, 1fr);grid-auto-rows:29mm;gap:0.5mm;width:100%;}}
 </style>
 </head><body><div class="grid">{"".join(cards)}</div></body></html>"""
     return html_total
@@ -198,7 +201,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande)
 
-        st.success(f"✅ ¡Listo!")
+        st.success(f"✅ ¡Listo! Se resaltarán en ROJO los PX desde {limite_mesa_grande} en adelante")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
