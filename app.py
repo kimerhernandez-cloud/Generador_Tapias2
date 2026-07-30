@@ -4,7 +4,7 @@ import html
 import streamlit as st
 
 st.set_page_config(page_title="Generador de Tapias", layout="wide")
-st.title("🎪 Generador de Etiquetas / Tapias")
+st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
 # ----------------------
 # FUNCIÓN: OBTENER PRIMER APELLIDO
@@ -93,33 +93,25 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion):
         elif re.search(r'llegar[aá]n\s+7\s*pm', obs_full, re.I):
             hora, cambio_horario = "19:00", True
 
-        # Etiquetas especiales
-        badges = []
+        # Etiquetas especiales → convertimos a BOOLEANOS correctamente
         obs_upper = obs_full.upper()
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMANTES|A\.\s*DIAMANTE|DIAMOND', obs_upper))
+        es_seguimiento = bool(re.search(r'SEGUIMIENTO', obs_upper))
         
-        if es_residence:
-            badges.append('🔑 RESIDENCE')
-        if es_diamante:
-            badges.append('💎 DIAMANTE')
-        if re.search(r'SEGUIMIENTO', obs_upper):
-            badges.append('🛑 SEGUIMIENTO')
-
-        tiene_exclusion = re.search(
+        tiene_exclusion = bool(re.search(
             r'SIN\s+ALERGIAS|NO\s+ALERGIAS|NO\s+ALERGIES|SIN\s+ALERGIA|NO\s+ALERGIA|CONFIRMAR\s+ALERGIAS|PREGUNTAR\s+ALERGIAS|VERIFICAR ALERGIAS|ALERGIAS\s+POR\s+CONFIRMAR',
             obs_upper
-        )
-        tiene_restriccion_real = re.search(
+        ))
+        tiene_restriccion_real = bool(re.search(
             r'CELIACO|CELIACA|CELIACOS|CELIACAS|GLUTEN FREE|GLUTEN|ALERGIA|ALERGIES|ALERGIE|SHELLFISH|MARISCOS|NUECES|NUTS|ALERGIA SEVERA|NO PORK|VEGETARIAN|VEGETARIANOS|CHOCOLATE',
             obs_upper
-        )
-        if tiene_restriccion_real and not tiene_exclusion:
-            badges.append('⚠️ ALERGIAS')
+        ))
+        es_alergia = tiene_restriccion_real and not tiene_exclusion
 
-        es_hbd = re.search(r'cumpleaños|festejando|birthday|birthday\'s|graduacion|graduation|pastel|vela|\byear\'s\b|\byear\b', obs_full, re.I)
-        es_ns = re.search(r'nuevos?\s+socios?|nuevos\s+miembros|nuevo\s+socio', obs_full, re.I)
-        es_daypass = re.search(r'day\s+pass', obs_full, re.I)
+        es_hbd = bool(re.search(r'cumpleaños|festejando|birthday|birthday\'s|graduacion|graduation|pastel|vela|\byear\'s\b|\byear\b', obs_full, re.I))
+        es_ns = bool(re.search(r'nuevos?\s+socios?|nuevos\s+miembros|nuevo\s+socio', obs_full, re.I))
+        es_daypass = bool(re.search(r'day\s+pass', obs_full, re.I))
 
         # LIMPIEZA DE OBSERVACIONES
         obs_clean = obs_full
@@ -138,8 +130,8 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion):
             obs_clean = re.sub(pat, '', obs_clean, flags=re.I | re.DOTALL)
         obs_clean = re.sub(r'\s+', ' ', obs_clean).strip().strip(',.;:')
 
-        # 🧠 AJUSTE INTELIGENTE POR TARJETA: calcula el tamaño según carga de información
-        cantidad_etiquetas = len(badges) + sum([es_hbd, es_ns, es_daypass, cambio_horario])
+        # 🧠 AJUSTE INTELIGENTE POR TARJETA → AHORA CON VALORES CORRECTOS
+        cantidad_etiquetas = sum([es_residence, es_diamante, es_seguimiento, es_alergia, es_hbd, es_ns, es_daypass, cambio_horario])
         longitud_texto = len(obs_clean)
 
         # Reglas de reducción automática individual
@@ -180,9 +172,9 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion):
             badges_html.append(f'<span style="{estilo_badge_azul}">🔑 RESIDENCE</span>')
         if es_diamante:
             badges_html.append(f'<span style="{estilo_badge_azul}">💎 DIAMANTE</span>')
-        if re.search(r'SEGUIMIENTO', obs_upper):
+        if es_seguimiento:
             badges_html.append('🛑 SEGUIMIENTO')
-        if tiene_restriccion_real and not tiene_exclusion:
+        if es_alergia:
             badges_html.append('⚠️ ALERGIAS')
 
         cabecera = f'''
@@ -194,22 +186,22 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion):
         # ETIQUETAS ESPECIALES
         etiqueta_especial = ""
         if es_hbd:
-            etiqueta_especial = f'<div style="font-weight:bold;font-size:10pt;text-align:center;color:#c00;margin:0.2mm 0;white-space:nowrap;">🎂 HBD</div>'
+            etiqueta_especial = '<div style="font-weight:bold;font-size:10pt;text-align:center;color:#c00;margin:0.2mm 0;white-space:nowrap;">🎂 HBD</div>'
             obs_clean = ""
         if es_ns:
-            etiqueta_especial = f'<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#006;margin:0.2mm 0;white-space:nowrap;">🆕 NS</div>'
+            etiqueta_especial = '<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#006;margin:0.2mm 0;white-space:nowrap;">🆕 NS</div>'
             obs_clean = ""
         if es_daypass:
-            etiqueta_especial = f'<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#333;margin:0.2mm 0;white-space:nowrap;">🎟️ Day Pass</div>'
+            etiqueta_especial = '<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#333;margin:0.2mm 0;white-space:nowrap;">🎟️ Day Pass</div>'
             obs_clean = ""
 
         # TAMAÑO FINAL DE OBSERVACIONES
         if len(obs_clean) < 40:
             tam_obs_final = t_obs
         elif len(obs_clean) < 80:
-            tam_obs_final = str(float(t_obs.replace('pt','')) - 0.5) + 'pt'
+            tam_obs_final = f"{float(t_obs.replace('pt','')) - 0.5}pt"
         else:
-            tam_obs_final = str(float(t_obs.replace('pt','')) - 1) + 'pt'
+            tam_obs_final = f"{float(t_obs.replace('pt','')) - 1}pt"
 
         obs_html = f'<div style="font-size:{tam_obs_final};line-height:1.3;min-height:7mm;max-height:15mm;overflow:hidden;word-wrap:break-word;margin-top:0.3mm;padding:0 1px;">{html.escape(obs_clean)}</div>' if obs_clean else ''
         cambio_html = f'<div style="color:#c00;font-weight:bold;font-size:{t_badges};margin:0.2mm 0;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ''
@@ -246,7 +238,7 @@ body {{margin:0;padding:0;width:100%;font-family:Arial, sans-serif;}}
 # ----------------------
 nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
 orientacion = st.radio("📐 Orientación de impresión:", ["Horizontal (recomendado)", "Vertical"], index=0)
-limite_mesa_grande = st.number_input("🔴 Mesa grande: resaltar PX desde ≥", min_value=5, value=7, step=1)
+limite_mesa_grande = st.number_input("🔴 Mesa grande: resaltar PX desde ≥", min_value=5, value=6, step=1)
 archivo = st.file_uploader("📂 Sube tu archivo Excel (.xlsx)", type="xlsx")
 
 if archivo and nombre_etiqueta.strip():
@@ -255,7 +247,7 @@ if archivo and nombre_etiqueta.strip():
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orient_simple)
 
-        st.success(f"✅ ¡Listo! Ajuste automático individual activado")
+        st.success(f"✅ ¡Listo!")
         st.download_button(
             label="📄 Descargar TAPIAS_HOJA_COMPLETA.html",
             data=html_final,
