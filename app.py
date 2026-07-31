@@ -179,51 +179,60 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_grupo: badges.append(f'<span style="{b_verde}">👥 GRUPO</span>')
         cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
 
-        # AJUSTE ESPACIADO HBD / ANIV + BORDE SIMPLE
+        # ESPACIADO GARANTIZADO - NUNCA SE CORTA
         esp = ""
         if es_hbd:
-            esp='<div style="font-weight:bold;font-size:10pt;text-align:center;color:#c00;margin:0.6mm 0;white-space:nowrap;padding-bottom:0.4mm;">🎂 HBD / ANIV</div>'
+            esp='<div style="font-weight:bold;font-size:10pt;text-align:center;color:#c00;margin:0.7mm 0 0.5mm 0;white-space:nowrap;">🎂 HBD / ANIV</div>'
             obs_clean=""
         if es_ns and not es_hbd:
-            esp='<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#006;margin:0.6mm 0;white-space:nowrap;padding-bottom:0.4mm;">🆕 NUEVO SOCIO</div>'
+            esp='<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#006;margin:0.7mm 0 0.5mm 0;white-space:nowrap;">🆕 NUEVO SOCIO</div>'
             obs_clean=""
         if es_daypass and not es_hbd:
-            esp='<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#333;margin:0.6mm 0;white-space:nowrap;padding-bottom:0.4mm;">🎟️ DAY PASS</div>'
+            esp='<div style="font-weight:bold;font-size:9.5pt;text-align:center;color:#333;margin:0.7mm 0 0.5mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
-        ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.2mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
-        obs_html = f'<div style="font-size:{tam_obs_final};line-height:1.3;min-height:5mm;overflow:hidden;word-wrap:break-word;margin-top:0.2mm;">{html.escape(obs_clean)}</div>' if obs_clean else ""
+        ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.3mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
+        obs_html = f'<div style="font-size:{tam_obs_final};line-height:1.3;overflow-wrap:break-word;margin-top:0.2mm;">{html.escape(obs_clean)}</div>' if obs_clean else ""
 
         h_clave = hora[:5]
         if h_clave: reporte_horas[h_clave] = reporte_horas.get(h_clave,0) + pax
 
-        # ✅ BORDE SIMPLE EN TODAS LAS TAPIAS + SIN CORTES
-        cards.append(f'<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.2mm;overflow:hidden;display:flex;flex-direction:column;gap:0.1mm;page-break-inside:avoid;">{cab}<div style="font-weight:bold;font-size:{ta};line-height:1.1;margin-top:0.2mm;">{html.escape(primer_apellido)}</div><div style="font-size:{td};"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div><div style="font-size:{td};"><b>Hora:</b> {hora}</div>{ch}{esp}{obs_html}</div>')
+        # ✅ BORDE SIMPLE ÚNICO - SIN DOBLE LÍNEA - ESPACIO INTERNO AJUSTADO
+        cards.append(f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.3mm;overflow:hidden;display:flex;flex-direction:column;gap:0.15mm;page-break-inside:avoid;">
+{cab}
+<div style="font-weight:bold;font-size:{ta};line-height:1.1;margin-top:0.2mm;">{html.escape(primer_apellido)}</div>
+<div style="font-size:{td};"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>
+<div style="font-size:{td};"><b>Hora:</b> {hora}</div>
+{ch}{esp}{obs_html}
+</div>'''.replace('\n',''))
 
-    # ---- REPORTE FINAL: LETRA MUY PEQUEÑA, SIN "PX", FORMATO COMPACTO ----
+    # ---- REPORTE FINAL: MÁS COMPACTO, SIN "PX", BORDE SIMPLE ----
     horas_ordenadas = sorted(reporte_horas.keys())
     total_horas = len(horas_ordenadas)
-    max_por_tapia = 12
+    max_por_tapia = 14
 
     # Primera tapia de reporte
     lineas_1 = horas_ordenadas[:max_por_tapia]
-    reporte_html_1 = f'<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.2mm;overflow:hidden;display:flex;flex-direction:column;gap:0.2mm;page-break-inside:avoid;"><div style="font-weight:bold;text-align:center;font-size:9pt;margin-bottom:0.5mm;">📊 REPORTE</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.1mm;">'
+    reporte_html_1 = f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.3mm;overflow:hidden;display:flex;flex-direction:column;gap:0.15mm;page-break-inside:avoid;">
+<div style="font-weight:bold;text-align:center;font-size:9pt;margin-bottom:0.4mm;">📊 REPORTE</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.15mm;">'''
     for h in lineas_1:
-        # ✅ SIN LA PALABRA "PX" - SOLO HORA Y NÚMERO
-        reporte_html_1 += f'<div style="font-size:7pt;line-height:1.1;">{h} — {reporte_horas[h]}</div>'
+        reporte_html_1 += f'<div style="font-size:6.8pt;line-height:1.1;">{h} — {reporte_horas[h]}</div>'
     reporte_html_1 += "</div>"
     if total_horas <= max_por_tapia:
-        reporte_html_1 += f'<div style="font-weight:bold;text-align:right;font-size:8pt;margin-top:0.3mm;">TOTAL: {total_pax}</div>'
+        reporte_html_1 += f'<div style="font-weight:bold;text-align:right;font-size:7.8pt;margin-top:0.4mm;">TOTAL: {total_pax}</div>'
     reporte_html_1 += "</div>"
     cards.append(reporte_html_1)
 
-    # Segunda tapia de reporte (si hay muchos horarios)
+    # Segunda tapia de reporte
     if total_horas > max_por_tapia:
         lineas_2 = horas_ordenadas[max_por_tapia:]
-        reporte_html_2 = f'<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.2mm;overflow:hidden;display:flex;flex-direction:column;gap:0.2mm;page-break-inside:avoid;"><div style="font-weight:bold;text-align:center;font-size:9pt;margin-bottom:0.5mm;">📊 REPORTE (CONT)</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.1mm;">'
+        reporte_html_2 = f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.3mm;overflow:hidden;display:flex;flex-direction:column;gap:0.15mm;page-break-inside:avoid;">
+<div style="font-weight:bold;text-align:center;font-size:9pt;margin-bottom:0.4mm;">📊 REPORTE (CONT)</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.15mm;">'''
         for h in lineas_2:
-            reporte_html_2 += f'<div style="font-size:7pt;line-height:1.1;">{h} — {reporte_horas[h]}</div>'
+            reporte_html_2 += f'<div style="font-size:6.8pt;line-height:1.1;">{h} — {reporte_horas[h]}</div>'
         reporte_html_2 += "</div>"
-        reporte_html_2 += f'<div style="font-weight:bold;text-align:right;font-size:8pt;margin-top:0.3mm;">TOTAL: {total_pax}</div></div>'
+        reporte_html_2 += f'<div style="font-weight:bold;text-align:right;font-size:7.8pt;margin-top:0.4mm;">TOTAL: {total_pax}</div></div>'
         cards.append(reporte_html_2)
 
     config = "size:letter;margin:2mm;" if tam_tapia=="Chica" else "size:letter;margin:3mm;"
@@ -248,8 +257,8 @@ if archivo and nombre_etiqueta.strip():
         tam_simple = "Grande" if tam_tapia.startswith("Grande") else "Chica"
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orient_simple, tam_simple)
-        st.success(f"✅ ¡Listo!")
+        st.success(f"✅ ¡Listo! Borde único, espacio ajustado, nada se corta")
         st.download_button("📄 Descargar TAPIAS.html", html_final, "TAPIAS_HOJA_COMPLETA.html", "text/html")
-        st.info("💡 Reporte: letra 7pt, formato 2 columnas, sin texto extra.")
+        st.info("💡 Reporte: letra 6.8pt, hasta 14 horarios por tapia, sin texto extra.")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
