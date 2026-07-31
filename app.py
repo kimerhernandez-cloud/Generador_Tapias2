@@ -279,7 +279,7 @@ if archivo and nombre_etiqueta.strip():
         tam_simple = "Grande" if tam_tapia.startswith("Grande") else "Chica"
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orient_simple, tam_simple)
-        st.success("✅ REDUCCIÓN GENERAL DE 2pt APLICADA: Todo cabe completo, legible y sin recortes")
+        st.success("✅ LISTO")
         st.download_button("📄 Descargar TAPIAS.html", html_final, "TAPIAS_HOJA_COMPLETA.html", "text/html")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
