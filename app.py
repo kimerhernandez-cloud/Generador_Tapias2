@@ -7,7 +7,7 @@ st.set_page_config(page_title="Generador de Tapias", layout="wide")
 st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN ACTUALIZADA: OBTIENE PRIMER NOMBRE Y PRIMER APELLIDO
+# 🔹 MEJORADO: IDENTIFICACIÓN DE NOMBRES PARA TODAS LAS REGIONES
 # -----------------------------------------------------------------------------
 def obtener_nombre_mostrar(nombre_completo):
     if pd.isna(nombre_completo):
@@ -16,18 +16,24 @@ def obtener_nombre_mostrar(nombre_completo):
     if not partes:
         return ""
     
-    # Primer nombre SIEMPRE es la primera parte
     primer_nombre = partes[0]
     
-    # Patrones de apellidos compuestos que van ANTES del primer apellido real
-    patrones_compuestos = [r'^de$', r'^del$', r'^de\s+la$', r'^de\s+los$', r'^la$', r'^los$', r'^san$', r'^santa$', r'^y$']
+    # Palabras de enlace en múltiples idiomas y regiones
+    patrones_palabras_enlace = [
+        r'^de$', r'^del$', r'^de\s+la$', r'^de\s+los$', r'^de\s+las$',
+        r'^la$', r'^los$', r'^las$', r'^san$', r'^santa$', r'^santo$',
+        r'^y$', r'^e$', r'^mc$', r'^mac$', r'^van$', r'^van\s+der$', r'^van\s+den$',
+        r'^von$', r'^der$', r'^den$', r'^het$', r'^de\s+vries$',
+        r'^bin$', r'^binti$', r'^binte$', r'^al$', r'^el$', r'^ibn$',
+        r'^kim$', r'^lee$', r'^park$', r'^choi$', r'^wang$', r'^zhang$', r'^li$',
+        r'^singh$', r'^kaur$'
+    ]
     
-    # Buscar el primer apellido válido
     idx = 1
     primer_apellido = ""
     while idx < len(partes):
-        es_patron = any(re.match(p, partes[idx].lower()) for p in patrones_compuestos)
-        if es_patron and idx + 1 < len(partes):
+        es_enlace = any(re.match(p, partes[idx].lower(), re.IGNORECASE) for p in patrones_palabras_enlace)
+        if es_enlace and idx + 1 < len(partes):
             idx += 1
             primer_apellido = partes[idx]
             break
@@ -35,13 +41,12 @@ def obtener_nombre_mostrar(nombre_completo):
             primer_apellido = partes[idx]
             break
     
-    # Devuelve: PRIMER NOMBRE + PRIMER APELLIDO (en mayúsculas el apellido para resaltar)
     if primer_apellido:
         return f"{primer_nombre} {primer_apellido.upper()}"
     return primer_nombre.upper()
 
 # -----------------------------------------------------------------------------
-# LIMPIEZA ABSOLUTA: ELIMINA TODOS LOS TEXTOS BASE
+# LIMPIEZA DE OBSERVACIONES (TU VERSIÓN ORIGINAL)
 # -----------------------------------------------------------------------------
 def limpiar_obs_base(texto):
     if not texto: return ""
@@ -74,7 +79,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: REDUCCIÓN -2pt + NOMBRE CORTO
+# FUNCIÓN PRINCIPAL CON TUS MEJORAS
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -86,17 +91,18 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         'pax': 'sum', 'hora': 'first', 'observaciones': 'first'
     }).reset_index()
 
+    # TAMAÑOS: NOMBRE AUMENTADO 2pts MÁS, EL RESTO IGUAL
     if tam_tapia == "Grande":
         alto_tarjeta = "29mm" if orientacion == "Horizontal" else "27mm"
         cols_grid = 6
-        base_apellido = "9.5pt"
+        base_apellido = "11.5pt"  # ← +2pts MÁS
         base_datos = "10pt"
         base_badges = "6pt"
         base_obs = "6.5pt"
     else:
         alto_tarjeta = "22mm"
         cols_grid = 8
-        base_apellido = "7pt"
+        base_apellido = "9pt"  # ← +2pts MÁS
         base_datos = "7.5pt"
         base_badges = "4.5pt"
         base_obs = "5pt"
@@ -112,7 +118,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         hora_val = fila['hora']
         obs_full = obtener_nombre_completo_seguro(fila['observaciones'])
 
-        # ✅ AQUÍ SE APLICA LA NUEVA FUNCIÓN: SOLO PRIMER NOMBRE Y PRIMER APELLIDO
         nombre_mostrar = obtener_nombre_mostrar(nombre_completo)
         hab_str = str(habitacion).strip().rstrip('.0') if pd.notna(habitacion) else ""
 
@@ -122,7 +127,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         except: pax = 1
         total_pax += pax
 
-        # DETECCIÓN AUTOMÁTICA DE PAX
+        # DETECCIÓN DE PAX (TU VERSIÓN ORIGINAL)
         for pat, val in [
             (r'22\s*PAX',22),(r'SON\s*PAX\s*0?7',7),(r'SON\s*0?3\s*PAX',3),
             (r'SON\s*4\s*PAX',4),(r'SON\s*10\s*PAX|10\s*PAX',10),(r'SON\s*5\s*PAX',5),
@@ -132,7 +137,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
             m = re.search(pat, obs_full.upper())
             if m: pax = val if val else int(m.group(1)); break
 
-        # FORMATO DE HORA PRECISO
+        # FORMATO DE HORA (TU VERSIÓN ORIGINAL)
         hora = ""
         if isinstance(hora_val, pd.Timestamp):
             hora = hora_val.strftime('%H:%M')
@@ -140,7 +145,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
             m = re.search(r'(\d{1,2})[:.]?(\d{2})', str(hora_val))
             hora = f"{int(m.group(1)):02d}:{m.group(2)}" if m else str(hora_val)[:5]
 
-        # DETECCIÓN DE CAMBIO DE HORARIO
+        # DETECCIÓN DE CAMBIO DE HORARIO (TU VERSIÓN ORIGINAL)
         cambio_horario = False
         m_hora = re.search(r'llegan?\s+a\s+las\s+(\d{1,2})[:.]?(\d{2})|arrive\s+(at|around)?\s*(\d{1,2})[:.]?(\d{2})', obs_full, re.I)
         if m_hora:
@@ -159,7 +164,9 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
                 if re.search(pat, obs_full, re.I):
                     hora, cambio_horario = hh, True; break
 
-        # ETIQUETAS ESPECIALES
+        # ---------------------------------------------------------------------
+        # 🔹 MEJORADO: DETECCIÓN HBD Y ANIVERSARIO AMPLIADA
+        # ---------------------------------------------------------------------
         obs_upper = obs_full.upper()
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMOND', obs_upper))
@@ -168,37 +175,53 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         tiene_excl = bool(re.search(r'SIN\s+ALERGIAS|NO\s+ALERGIES|CONFIRMAR', obs_upper))
         tiene_rest = bool(re.search(r'CELIACO|GLUTEN|ALERGIA|ALERGY|SHELLFISH|NUTS|VEGETARIAN|VEGAN|DIABETES|NO PORK', obs_upper))
         es_alergia = tiene_rest and not tiene_excl
-        es_hbd = bool(re.search(r'cumpleaños|aniversario|birthday|anniversary|celebrat|festejando', obs_full, re.I))
+        
+        # Cumpleaños: español e inglés + frases completas
+        es_hbd = bool(re.search(
+            r'cumpleaños|cumple\s+año|cumple\s+años|estamos\s+celebrando.*cumple|celebrando.*cumple|'
+            r'birthday|birth\s+day|celebrat.*birth|happy\s+birth',
+            obs_full, re.I
+        ))
+        
+        # Aniversario: todas las variantes
+        es_aniversario = bool(re.search(
+            r'aniversario|aniversarios|anniversary|wedding\s+anniv',
+            obs_full, re.I
+        ))
+        
         es_ns = bool(re.search(r'nuevos?\s+socios?|new members|new guest', obs_full, re.I))
         es_daypass = bool(re.search(r'day pass|visitor|external guest', obs_full, re.I))
         es_privado = bool(re.search(r'privado|private|vip', obs_upper))
 
-        # LIMPIEZA FINAL DE OBSERVACIONES
         obs_clean = limpiar_obs_base(obs_full)
 
-        # ==============================================================
-        # AJUSTE AUTÓNOMO: TAMBIÉN REDUCIDO -2pt
-        # ==============================================================
-        cant_tags = sum([es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_ns,es_daypass,es_privado,es_grupo,cambio_horario])
+        # AJUSTE AUTOMÁTICO DE TAMAÑO (adaptado al nuevo tamaño de nombre)
+        cant_tags = sum([es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario])
         len_obs = len(obs_clean)
         longitud_nombre = len(nombre_mostrar)
         total_caracteres = len(nombre_mostrar) + len(hab_str) + len(str(pax)) + len(hora) + len(obs_clean) + (cant_tags * 15)
 
         if total_caracteres > 200 or cant_tags >=4 or len_obs>130 or longitud_nombre>20:
-            ta, td, tb, to = "5.2pt", "5.8pt", "3.5pt", "3.5pt"
+            ta, td, tb, to = "7.2pt", "5.8pt", "3.5pt", "3.5pt"
         elif total_caracteres > 150 or cant_tags >=3 or len_obs>90 or longitud_nombre>15:
-            ta, td, tb, to = "5.8pt", "6.3pt", "3.8pt", "3.8pt"
+            ta, td, tb, to = "7.8pt", "6.3pt", "3.8pt", "3.8pt"
         elif total_caracteres > 90 or cant_tags >=2 or len_obs>50 or longitud_nombre>12:
-            ta, td, tb, to = "6.3pt", "6.8pt", "4.2pt", "4.2pt"
+            ta, td, tb, to = "8.3pt", "6.8pt", "4.2pt", "4.2pt"
         else:
             ta, td, tb, to = base_apellido, base_datos, base_badges, base_obs
 
-        etiqueta_pax = f"<b>PX:</b> {pax}"
+        # ---------------------------------------------------------------------
+        # 🔹 MEJORADO: RECUADRO ROJO PARA MESAS GRANDES (Hab + PX)
+        # ---------------------------------------------------------------------
         if pax >= limite_mesa_grande:
-            est = "display:inline-block;border:1px solid #c00;background:#FFECEC;color:#c00;padding:1px 4px;border-radius:2px;font-weight:bold;"
-            etiqueta_pax = f'<span style="{est}">{etiqueta_pax}</span>'
+            estilo_datos = "border:1.5px solid #c00;padding:2px 4px;border-radius:3px;background:#FFECEC;"
+            etiqueta_pax = f"<b>PX:</b> {pax}"
+            datos_linea = f'<div style="font-size:{td};text-align:left;{estilo_datos}"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>'
+        else:
+            etiqueta_pax = f"<b>PX:</b> {pax}"
+            datos_linea = f'<div style="font-size:{td};text-align:left;"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>'
 
-        # ESTILOS DE ETIQUETAS
+        # ESTILOS DE ETIQUETAS (TU VERSIÓN ORIGINAL)
         est_head = f"padding:1px 3px;border-radius:2px;flex-wrap:wrap;gap:1px;font-size:{tb};"
         if es_residence or es_diamante: est_head += "background:#E0F7FF;border:1px solid #4682B4;"
         b_azul = f"display:inline-block;border:1px solid #4682B4;background:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:{tb};font-weight:bold;margin-right:2px;"
@@ -212,15 +235,18 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_grupo: badges.append(f'<span style="{b_verde}">👥 GRUPO</span>')
         cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
 
-        # ETIQUETAS ESPECIALES CENTRADAS
+        # ETIQUETAS ESPECIALES (MEJORADAS HBD + ANIVERSARIO)
         esp = ""
         if es_hbd:
-            esp='<div style="font-weight:bold;font-size:6.8pt;text-align:center;color:#c00;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎂 HBD / ANIV</div>'
+            esp='<div style="font-weight:bold;font-size:6.8pt;text-align:center;color:#c00;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎂 CUMPLEAÑOS / BIRTHDAY</div>'
             obs_clean=""
-        if es_ns and not es_hbd:
+        if es_aniversario and not es_hbd:
+            esp='<div style="font-weight:bold;font-size:6.8pt;text-align:center;color:#800080;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">💍 ANIVERSARIO</div>'
+            obs_clean=""
+        if es_ns and not es_hbd and not es_aniversario:
             esp='<div style="font-weight:bold;font-size:6.3pt;text-align:center;color:#006;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🆕 NUEVO SOCIO</div>'
             obs_clean=""
-        if es_daypass and not es_hbd:
+        if es_daypass and not es_hbd and not es_aniversario:
             esp='<div style="font-weight:bold;font-size:6.3pt;text-align:center;color:#333;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
         ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.2mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
@@ -233,12 +259,12 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         cards.append(f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.5mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.15mm;page-break-inside:avoid;">
 {cab}
 <div style="font-weight:bold;font-size:{ta};line-height:1.05;margin-top:0.1mm;text-align:left;">{html.escape(nombre_mostrar)}</div>
-<div style="font-size:{td};text-align:left;"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>
+{datos_linea}
 <div style="font-size:{td};text-align:left;"><b>Hora:</b> {hora}</div>
 {ch}{esp}{obs_html}
 </div>'''.replace('\n',''))
 
-    # ---- REPORTE FINAL ----
+    # ---- REPORTE FINAL (TU VERSIÓN ORIGINAL) ----
     horas_ordenadas = sorted(reporte_horas.keys())
     total_horas = len(horas_ordenadas)
     max_por_tapia = 14
@@ -266,7 +292,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
     reporte_html_2 += f'<div style="font-weight:bold;text-align:right;font-size:5.5pt;margin-top:0.3mm;">TOTAL: {total_pax}</div></div>'
     cards.append(reporte_html_2)
 
-    # CONFIGURACIÓN FINAL
+    # CONFIGURACIÓN FINAL (TU VERSIÓN ORIGINAL)
     config = "size:letter;margin:2mm;" if tam_tapia=="Chica" else "size:letter;margin:3mm;"
     if orientacion=="Horizontal": config = config.replace("size:letter","size:letter landscape")
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tapias - {html.escape(titulo_etiqueta)}</title>
@@ -274,14 +300,14 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 <body><div class="grid">{"".join(cards)}</div></body></html>"""
 
 # -----------------------------------------------------------------------------
-# INTERFAZ
+# INTERFAZ (TU VERSIÓN ORIGINAL)
 # -----------------------------------------------------------------------------
 st.title("⚙️ Configuración")
 nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
 orientacion = st.radio("📐 Orientación:", ["Horizontal","Vertical"], index=0)
 tam_tapia = st.radio("📏 Elige el tamaño de tapia:", ["Grande (actual)","Chica (8x7 por hoja)"], index=0)
 limite_mesa_grande = st.number_input("🔴 Resaltar PX desde ≥", min_value=5, value=6, step=1)
-archivo = st.file_uploader("📂 Sube tu Excel de reservaciones (.xlsx)", type="xlsx")
+archivo = st.file_uploader("📂 Sube tu Excel (.xlsx)", type="xlsx")
 
 if archivo and nombre_etiqueta.strip():
     try:
@@ -289,7 +315,7 @@ if archivo and nombre_etiqueta.strip():
         tam_simple = "Grande" if tam_tapia.startswith("Grande") else "Chica"
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orient_simple, tam_simple)
-        st.success("✅LISTO :)")
-        st.download_button("📄 Descargar TAPIAS.html", html_final, "TAPIAS_GENERADAS.html", "text/html")
+        st.success("✅ LISTO")
+        st.download_button("📄 Descargar TAPIAS.html", html_final, "TAPIAS_HOJA_COMPLETA.html", "text/html")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
