@@ -6,7 +6,9 @@ import streamlit as st
 st.set_page_config(page_title="Generador de Tapias", layout="wide")
 st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
-
+# -----------------------------------------------------------------------------
+# ✅ FUNCIÓN DE NOMBRES: Nombre + Apellido COMPUESTO INCLUIDO
+# -----------------------------------------------------------------------------
 def obtener_nombre_mostrar(nombre_completo):
     if pd.isna(nombre_completo):
         return ""
@@ -68,7 +70,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL CON REDUCCIÓN DE NOMBRE LARGO (SIN RECUADROS)
+# FUNCIÓN PRINCIPAL: MARGEN AZUL CIELO PARA RESIDENCE / DIAMANTE
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -178,7 +180,13 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         obs_clean = limpiar_obs_base(obs_full)
 
-        # ✅ REDUCCIÓN INTELIGENTE DEL NOMBRE LARGO (sin recuadros)
+        # ✅ MARGEN AZUL CIELO SI ES RESIDENCE O DIAMANTE
+        if es_residence or es_diamante:
+            borde_tarjeta = "border:2px solid #87CEEB;" # Azul cielo
+        else:
+            borde_tarjeta = "border:1px solid #000;" # Normal negro fino
+
+        # Reducción inteligente nombre largo
         longitud_nombre = len(nombre_mostrar)
         cant_tags = sum([es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario])
 
@@ -191,7 +199,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         else:
             tam_nombre = base_apellido
 
-        # Ajuste resto de fuentes
         len_obs = len(obs_clean)
         total_caracteres = longitud_nombre + len(hab_str) + len(str(pax)) + len(hora) + len(obs_clean) + (cant_tags * 15)
 
@@ -213,7 +220,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
             etiqueta_pax = f"<b>PX:</b> {pax}"
             datos_linea = f'<div style="font-size:{td};text-align:left;"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>'
 
-        # Estilos etiquetas y encabezado LIMPIO SIN RECUADROS
+        # Estilos etiquetas
         est_head = f"padding:1px 3px;border-radius:2px;flex-wrap:wrap;gap:1px;font-size:{tb};"
         b_azul = f"display:inline-block;border:1px solid #4682B4;background:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:{tb};font-weight:bold;margin-right:2px;"
         b_naranja = b_azul.replace("#E0F7FF","#FFF3E0").replace("#4682B4","#F57C00").replace("#005580","#E65100")
@@ -225,7 +232,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_alergia: badges.append('⚠️ ALERGIAS')
         if es_grupo: badges.append(f'<span style="{b_verde}">👥 GRUPO</span>')
 
-        # Encabezado normal, limpio
         cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
 
         # Etiquetas especiales abajo
@@ -248,8 +254,8 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         h_clave = hora[:5]
         if h_clave: reporte_horas[h_clave] = reporte_horas.get(h_clave,0) + pax
 
-        # Tarjeta final
-        cards.append(f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.5mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.15mm;page-break-inside:avoid;">
+        # Tarjeta con borde dinámico
+        cards.append(f'''<div style="width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.5mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.15mm;page-break-inside:avoid;">
 {cab}
 <div style="font-weight:bold;font-size:{ta};line-height:1.05;margin-top:0.1mm;text-align:left;">{html.escape(nombre_mostrar)}</div>
 {datos_linea}
@@ -314,7 +320,7 @@ if archivo and nombre_etiqueta.strip():
     try:
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final, info = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orientacion, tam_tapia)
-        st.success(f"✅ Listo — {info}")
+        st.success(f"✅ Listo — {info} | Resaltado azul cielo para Residence/Diamante activado")
         st.download_button(f"📄 Descargar TAPIAS {tam_tapia}.html", html_final, f"TAPIAS_{tam_tapia.upper()}.html", "text/html")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
