@@ -70,7 +70,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: MARGEN AZUL CIELO PARA RESIDENCE / DIAMANTE
+# FUNCIÓN PRINCIPAL: BORDE AZUL MUY GRUESO + OBSERVACIONES VERDE FUERTE
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -180,11 +180,11 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         obs_clean = limpiar_obs_base(obs_full)
 
-        # ✅ MARGEN AZUL CIELO SI ES RESIDENCE O DIAMANTE
+        # ✅ BORDE AZUL CIELO MUY GRUESO (4px) para que de verdad resalte
         if es_residence or es_diamante:
-            borde_tarjeta = "border:2px solid #87CEEB;" # Azul cielo
+            borde_tarjeta = "border:4px solid #87CEEB;"
         else:
-            borde_tarjeta = "border:1px solid #000;" # Normal negro fino
+            borde_tarjeta = "border:1px solid #000;"
 
         # Reducción inteligente nombre largo
         longitud_nombre = len(nombre_mostrar)
@@ -249,12 +249,13 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
             esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
         ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.2mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
-        obs_html = f'<div style="font-size:{to};line-height:1.2;overflow-wrap:break-word;margin-top:0.1mm;text-align:left;">{html.escape(obs_clean)}</div>' if obs_clean else ""
+        # ✅ OBSERVACIONES EN VERDE FUERTE (#008000)
+        obs_html = f'<div style="font-size:{to};line-height:1.2;overflow-wrap:break-word;margin-top:0.1mm;text-align:left;color:#008000;font-weight:500;">{html.escape(obs_clean)}</div>' if obs_clean else ""
 
         h_clave = hora[:5]
         if h_clave: reporte_horas[h_clave] = reporte_horas.get(h_clave,0) + pax
 
-        # Tarjeta con borde dinámico
+        # Tarjeta final
         cards.append(f'''<div style="width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.5mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.15mm;page-break-inside:avoid;">
 {cab}
 <div style="font-weight:bold;font-size:{ta};line-height:1.05;margin-top:0.1mm;text-align:left;">{html.escape(nombre_mostrar)}</div>
@@ -320,7 +321,7 @@ if archivo and nombre_etiqueta.strip():
     try:
         df = pd.read_excel(archivo, engine="openpyxl")
         html_final, info = generar_html(df, nombre_etiqueta.strip(), limite_mesa_grande, orientacion, tam_tapia)
-        st.success(f"✅ Listo — {info} | Resaltado azul cielo para Residence/Diamante activado")
+        st.success(f"✅ Listo")
         st.download_button(f"📄 Descargar TAPIAS {tam_tapia}.html", html_final, f"TAPIAS_{tam_tapia.upper()}.html", "text/html")
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
