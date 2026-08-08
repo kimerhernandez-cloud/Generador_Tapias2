@@ -70,7 +70,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL CON TAMAÑOS Y CANTIDAD POR HOJA
+# FUNCIÓN PRINCIPAL CON REDUCCIÓN DE NOMBRE + RECUADROS PARA NÚMERO DE MESA
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -82,8 +82,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         'pax': 'sum', 'hora': 'first', 'observaciones': 'first'
     }).reset_index()
 
-    # 📏 TAMAÑOS + INDICAR CUÁNTAS CABEN POR HOJA
-    info_cantidad = ""
+    # 📏 TAMAÑOS BASE
     if tam_tapia == "Grande":
         alto_tarjeta = "29mm" if orientacion == "Horizontal" else "27mm"
         cols_grid = 6
@@ -91,7 +90,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         base_datos = "10.5pt"
         base_badges = "6.5pt"
         base_obs = "7pt"
-        info_cantidad = "📌 Grande: **6 por fila** | ~30-36 tapias por hoja carta"
     elif tam_tapia == "Mediana":
         alto_tarjeta = "25mm" if orientacion == "Horizontal" else "24mm"
         cols_grid = 7
@@ -99,7 +97,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         base_datos = "9pt"
         base_badges = "5.5pt"
         base_obs = "6pt"
-        info_cantidad = "📌 Mediana: **7 por fila** | ~42-49 tapias por hoja carta"
     else: # Chica
         alto_tarjeta = "22mm"
         cols_grid = 8
@@ -107,7 +104,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         base_datos = "8pt"
         base_badges = "5pt"
         base_obs = "5.5pt"
-        info_cantidad = "📌 Chica: **8 por fila** | 56 tapias por hoja carta"
 
     reporte_horas = {}
     total_pax = 0
@@ -184,20 +180,34 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         obs_clean = limpiar_obs_base(obs_full)
 
-        # Ajuste automático de letra
-        cant_tags = sum([es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario])
-        len_obs = len(obs_clean)
+        # ✅ CONTAR ETIQUETAS PARA SABER SI PONER RECUADROS DE MESA
+        lista_etiquetas = [es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario]
+        tiene_etiquetas = any(lista_etiquetas)
+
+        # ✅ REDUCIR TAMAÑO DEL NOMBRE SI ES MUY LARGO
         longitud_nombre = len(nombre_mostrar)
-        total_caracteres = len(nombre_mostrar) + len(hab_str) + len(str(pax)) + len(hora) + len(obs_clean) + (cant_tags * 15)
+        cant_tags = sum(lista_etiquetas)
+        if longitud_nombre > 22:
+            tam_nombre = "8pt"
+        elif longitud_nombre > 18:
+            tam_nombre = "8.8pt"
+        elif longitud_nombre > 14:
+            tam_nombre = base_apellido
+        else:
+            tam_nombre = base_apellido
+
+        # Ajuste automático resto letras
+        len_obs = len(obs_clean)
+        total_caracteres = longitud_nombre + len(hab_str) + len(str(pax)) + len(hora) + len(obs_clean) + (cant_tags * 15)
 
         if total_caracteres > 200 or cant_tags >=4 or len_obs>130 or longitud_nombre>20:
-            ta, td, tb, to = "9.5pt", "8pt", "5pt", "5.5pt"
+            ta, td, tb, to = tam_nombre, "8pt", "5pt", "5.5pt"
         elif total_caracteres > 150 or cant_tags >=3 or len_obs>90 or longitud_nombre>15:
-            ta, td, tb, to = "10pt", "8.5pt", "5.5pt", "6pt"
+            ta, td, tb, to = tam_nombre, "8.5pt", "5.5pt", "6pt"
         elif total_caracteres > 90 or cant_tags >=2 or len_obs>50 or longitud_nombre>12:
-            ta, td, tb, to = "10.5pt", "9pt", "6pt", "6.5pt"
+            ta, td, tb, to = tam_nombre, "9pt", "6pt", "6.5pt"
         else:
-            ta, td, tb, to = base_apellido, base_datos, base_badges, base_obs
+            ta, td, tb, to = tam_nombre, base_datos, base_badges, base_obs
 
         # Resaltado mesas grandes
         if pax >= limite_mesa_grande:
@@ -210,7 +220,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         # Estilos etiquetas
         est_head = f"padding:1px 3px;border-radius:2px;flex-wrap:wrap;gap:1px;font-size:{tb};"
-        if es_residence or es_diamante: est_head += "background:#E0F7FF;border:1px solid #4682B4;"
         b_azul = f"display:inline-block;border:1px solid #4682B4;background:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:{tb};font-weight:bold;margin-right:2px;"
         b_naranja = b_azul.replace("#E0F7FF","#FFF3E0").replace("#4682B4","#F57C00").replace("#005580","#E65100")
         b_verde = b_azul.replace("#E0F7FF","#E8F5E9").replace("#4682B4","#2E7D32").replace("#005580","#1B5E20")
@@ -220,9 +229,14 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_seguimiento: badges.append(f'<span style="{b_naranja}">🛑 SEGUIMIENTO</span>')
         if es_alergia: badges.append('⚠️ ALERGIAS')
         if es_grupo: badges.append(f'<span style="{b_verde}">👥 GRUPO</span>')
-        cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
 
-        # Etiquetas especiales en parte inferior
+        # ✅ SI NO TIENE ETIQUETAS: DOS CUADRADOS PEQUEÑOS ARRIBA IZQUIERDA PARA NÚMERO DE MESA
+        if not tiene_etiquetas:
+            cab = f'<div style="display:flex;justify-content:space-between;align-items:center;line-height:1.1;"><div style="display:flex;gap:3px;"><div style="width:7mm;height:7mm;border:1px solid #000;"></div><div style="width:7mm;height:7mm;border:1px solid #000;"></div></div><span style="font-weight:bold;white-space:nowrap;font-size:{tb};">{html.escape(titulo_etiqueta)}</span></div>'
+        else:
+            cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
+
+        # Etiquetas especiales abajo
         esp = ""
         if es_hbd:
             esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#c00;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎂 HBD</div>'
@@ -281,25 +295,19 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
     config = "size:letter;margin:2mm;" if tam_tapia=="Chica" else ("size:letter;margin:2.5mm;" if tam_tapia=="Mediana" else "size:letter;margin:3mm;")
     if orientacion=="Horizontal": config = config.replace("size:letter","size:letter landscape")
+    info_cant = {"Grande":"6 por fila ~30-36/hoja","Mediana":"7 por fila ~42-49/hoja","Chica":"8 por fila 56/hoja"}[tam_tapia]
     return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tapias - {html.escape(titulo_etiqueta)}</title>
 <style>@page {{{config}}} *{{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}} body{{margin:0;padding:0;width:100%;font-family:Arial,sans-serif;}} .grid{{display:grid;grid-template-columns:repeat({cols_grid},1fr);grid-auto-rows:{alto_tarjeta};gap:0.4mm;width:100%;border:none;}}</style></head>
-<body><div class="grid">{"".join(cards)}</div></body></html>""", info_cantidad
+<body><div class="grid">{"".join(cards)}</div></body></html>""", info_cant
 
 # -----------------------------------------------------------------------------
-# INTERFAZ CON INFO DE CANTIDAD POR HOJA
+# INTERFAZ
 # -----------------------------------------------------------------------------
 st.title("⚙️ Configuración")
 nombre_etiqueta = st.text_input("Nombre para reemplazar CIRCO:", value="CIRCO")
 orientacion = st.radio("📐 Orientación:", ["Horizontal","Vertical"], index=0)
+tam_tapia = st.radio("📏 Elige el tamaño de tapia:", ["Grande", "Mediana", "Chica"], index=1)
 
-# 👇 TRES OPCIONES VISIBLES
-tam_tapia = st.radio(
-    "📏 Elige el tamaño de tapia:",
-    ["Grande", "Mediana", "Chica"],
-    index=1 # Mediana por defecto
-)
-
-# 📌 MUESTRA AL INSTANTE CUÁNTAS CABEN
 if tam_tapia == "Grande":
     st.info("📌 **Grande**: 6 tapias por fila | ~30 a 36 por hoja carta")
 elif tam_tapia == "Mediana":
