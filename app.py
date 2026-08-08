@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import html
 import streamlit as st
+from datetime import datetime # ✅ Para capturar hora exacta de generación
 
 st.set_page_config(page_title="Generador de Tapias", layout="wide")
 st.title("🎪 Generador de Etiquetas / Tapias by MH")
@@ -37,7 +38,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: BORDE AZUL 4PX + OBS VERDE FUERTE + NOMBRE TODO MAYÚSCULAS
+# FUNCIÓN PRINCIPAL: + LEYENDA ÚLTIMA HORA DE GENERACIÓN
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -48,6 +49,9 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
     grouped = df.groupby(['nombre_reserva', 'habitacion'], sort=False).agg({
         'pax': 'sum', 'hora': 'first', 'observaciones': 'first'
     }).reset_index()
+
+    # 📌 HORA EXACTA DE GENERACIÓN DEL REPORTE
+    hora_generacion = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
     # 📏 TAMAÑOS BASE
     if tam_tapia == "Grande":
@@ -83,7 +87,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         hora_val = fila['hora']
         obs_full = obtener_nombre_completo_seguro(fila['observaciones'])
 
-        nombre_mostrar = obtener_nombre_mostrar(nombre_completo) # TODO MAYÚSCULAS
+        nombre_mostrar = obtener_nombre_mostrar(nombre_completo)
         hab_str = str(habitacion).strip().rstrip('.0') if pd.notna(habitacion) else ""
 
         try:
@@ -231,7 +235,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 {ch}{esp}{obs_html}
 </div>'''.replace('\n',''))
 
-    # Reporte final por horas
+    # Reporte final por horas + LEYENDA DE HORA DE GENERACIÓN
     horas_ordenadas = sorted(reporte_horas.keys())
     total_horas = len(horas_ordenadas)
     max_por_tapia = 14
@@ -239,6 +243,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
     lineas_1 = horas_ordenadas[:max_por_tapia]
     reporte_html_1 = f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.5mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.15mm;page-break-inside:avoid;">
 <div style="font-weight:bold;text-align:center;font-size:6.8pt;margin-bottom:0.3mm;">📊 REPORTE</div>
+<div style="font-style:italic; font-size:5pt; color:#333; text-align:center; margin-bottom:0.2mm;">📌 Generado el: {hora_generacion}</div>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.1mm;">'''
     for h in lineas_1:
         reporte_html_1 += f'<div style="font-size:4.5pt;line-height:1.1;">{h} — {reporte_horas[h]}</div>'
@@ -252,6 +257,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         lineas_2 = horas_ordenadas[max_por_tapia:]
         reporte_html_2 = f'''<div style="width:100%;height:100%;border:1px solid #000;box-sizing:border-box;padding:1.5mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.15mm;page-break-inside:avoid;">
 <div style="font-weight:bold;text-align:center;font-size:6.8pt;margin-bottom:0.3mm;">📊 REPORTE (CONT)</div>
+<div style="font-style:italic; font-size:5pt; color:#333; text-align:center; margin-bottom:0.2mm;">📌 Generado el: {hora_generacion}</div>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.1mm;">'''
         for h in lineas_2:
             reporte_html_2 += f'<div style="font-size:4.5pt;line-height:1.1;">{h} — {reporte_horas[h]}</div>'
@@ -277,7 +283,7 @@ tam_tapia = st.radio("📏 Elige el tamaño de tapia:", ["Grande", "Mediana", "C
 if tam_tapia == "Grande":
     st.info("📌 **Grande**: 6 tapias por fila | ~30 a 36 por hoja carta")
 elif tam_tapia == "Mediana":
-    st.info("📌 **Mediana**: 7 tapias por fila | ~42 a 49 por hoja carta")
+    st.info("📌 **Mediana**: 7 tapias por fila | ~42-49 por hoja carta")
 else:
     st.info("📌 **Chica**: 8 tapias por fila | 56 tapias por hoja carta")
 
