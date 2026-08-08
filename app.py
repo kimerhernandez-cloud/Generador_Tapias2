@@ -7,45 +7,12 @@ st.set_page_config(page_title="Generador de Tapias", layout="wide")
 st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
 # -----------------------------------------------------------------------------
-# ✅ FUNCIÓN DE NOMBRES: Nombre + Apellido COMPUESTO INCLUIDO
+# ✅ FUNCIÓN DE NOMBRES: TODO COMPLETAMENTE EN MAYÚSCULAS
 # -----------------------------------------------------------------------------
 def obtener_nombre_mostrar(nombre_completo):
     if pd.isna(nombre_completo):
         return ""
-    partes = str(nombre_completo).strip().split()
-    if not partes:
-        return ""
-    
-    enlace = {
-        'de', 'del', 'de la', 'de los', 'de las',
-        'la', 'los', 'las', 'san', 'santa', 'santo', 'y', 'e',
-        'van', 'van der', 'van den', 'von', 'der', 'den',
-        'al', 'el', 'ibn', 'bin', 'binti'
-    }
-    
-    primer_nombre = partes[0]
-    apellido = []
-    idx = 1
-    
-    while idx < len(partes):
-        palabra_actual = partes[idx].lower()
-        es_inicio_apellido = (
-            palabra_actual in enlace 
-            or idx == len(partes)-1 
-            or (idx+1 < len(partes) and partes[idx+1].lower() not in enlace)
-        )
-        if es_inicio_apellido:
-            apellido.append(partes[idx])
-            idx += 1
-            while idx < len(partes):
-                apellido.append(partes[idx])
-                idx += 1
-            break
-        idx += 1
-    
-    if apellido:
-        return f"{primer_nombre} {' '.join(apellido).upper()}"
-    return primer_nombre.upper()
+    return str(nombre_completo).strip().upper()
 
 # -----------------------------------------------------------------------------
 # LIMPIEZA DE OBSERVACIONES
@@ -70,7 +37,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: BORDE AZUL MUY GRUESO + OBSERVACIONES VERDE FUERTE
+# FUNCIÓN PRINCIPAL: BORDE AZUL 4PX + OBS VERDE FUERTE + NOMBRE TODO MAYÚSCULAS
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -116,7 +83,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         hora_val = fila['hora']
         obs_full = obtener_nombre_completo_seguro(fila['observaciones'])
 
-        nombre_mostrar = obtener_nombre_mostrar(nombre_completo)
+        nombre_mostrar = obtener_nombre_mostrar(nombre_completo) # TODO MAYÚSCULAS
         hab_str = str(habitacion).strip().rstrip('.0') if pd.notna(habitacion) else ""
 
         try:
@@ -180,7 +147,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         obs_clean = limpiar_obs_base(obs_full)
 
-        # ✅ BORDE AZUL CIELO MUY GRUESO (4px) para que de verdad resalte
+        # ✅ BORDE AZUL CIELO MUY GRUESO (4px)
         if es_residence or es_diamante:
             borde_tarjeta = "border:4px solid #87CEEB;"
         else:
@@ -249,7 +216,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
             esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
         ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.2mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
-        # ✅ OBSERVACIONES EN VERDE FUERTE (#008000)
+        # ✅ OBSERVACIONES EN VERDE FUERTE
         obs_html = f'<div style="font-size:{to};line-height:1.2;overflow-wrap:break-word;margin-top:0.1mm;text-align:left;color:#008000;font-weight:500;">{html.escape(obs_clean)}</div>' if obs_clean else ""
 
         h_clave = hora[:5]
