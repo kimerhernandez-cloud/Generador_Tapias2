@@ -6,9 +6,7 @@ import streamlit as st
 st.set_page_config(page_title="Generador de Tapias", layout="wide")
 st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
-# -----------------------------------------------------------------------------
-# ✅ FUNCIÓN DE NOMBRES: Nombre + Apellido COMPUESTO INCLUIDO
-# -----------------------------------------------------------------------------
+
 def obtener_nombre_mostrar(nombre_completo):
     if pd.isna(nombre_completo):
         return ""
@@ -70,7 +68,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL CON REDUCCIÓN DE NOMBRE + RECUADROS PARA NÚMERO DE MESA
+# FUNCIÓN PRINCIPAL CON REDUCCIÓN DE NOMBRE LARGO (SIN RECUADROS)
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -180,13 +178,10 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         obs_clean = limpiar_obs_base(obs_full)
 
-        # ✅ CONTAR ETIQUETAS PARA SABER SI PONER RECUADROS DE MESA
-        lista_etiquetas = [es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario]
-        tiene_etiquetas = any(lista_etiquetas)
-
-        # ✅ REDUCIR TAMAÑO DEL NOMBRE SI ES MUY LARGO
+        # ✅ REDUCCIÓN INTELIGENTE DEL NOMBRE LARGO (sin recuadros)
         longitud_nombre = len(nombre_mostrar)
-        cant_tags = sum(lista_etiquetas)
+        cant_tags = sum([es_residence,es_diamante,es_seguimiento,es_alergia,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario])
+
         if longitud_nombre > 22:
             tam_nombre = "8pt"
         elif longitud_nombre > 18:
@@ -196,7 +191,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         else:
             tam_nombre = base_apellido
 
-        # Ajuste automático resto letras
+        # Ajuste resto de fuentes
         len_obs = len(obs_clean)
         total_caracteres = longitud_nombre + len(hab_str) + len(str(pax)) + len(hora) + len(obs_clean) + (cant_tags * 15)
 
@@ -218,7 +213,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
             etiqueta_pax = f"<b>PX:</b> {pax}"
             datos_linea = f'<div style="font-size:{td};text-align:left;"><b>Hab:</b> {html.escape(hab_str)} | {etiqueta_pax}</div>'
 
-        # Estilos etiquetas
+        # Estilos etiquetas y encabezado LIMPIO SIN RECUADROS
         est_head = f"padding:1px 3px;border-radius:2px;flex-wrap:wrap;gap:1px;font-size:{tb};"
         b_azul = f"display:inline-block;border:1px solid #4682B4;background:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:{tb};font-weight:bold;margin-right:2px;"
         b_naranja = b_azul.replace("#E0F7FF","#FFF3E0").replace("#4682B4","#F57C00").replace("#005580","#E65100")
@@ -230,11 +225,8 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_alergia: badges.append('⚠️ ALERGIAS')
         if es_grupo: badges.append(f'<span style="{b_verde}">👥 GRUPO</span>')
 
-        # ✅ SI NO TIENE ETIQUETAS: DOS CUADRADOS PEQUEÑOS ARRIBA IZQUIERDA PARA NÚMERO DE MESA
-        if not tiene_etiquetas:
-            cab = f'<div style="display:flex;justify-content:space-between;align-items:center;line-height:1.1;"><div style="display:flex;gap:3px;"><div style="width:7mm;height:7mm;border:1px solid #000;"></div><div style="width:7mm;height:7mm;border:1px solid #000;"></div></div><span style="font-weight:bold;white-space:nowrap;font-size:{tb};">{html.escape(titulo_etiqueta)}</span></div>'
-        else:
-            cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
+        # Encabezado normal, limpio
+        cab = f'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:2px;line-height:1.1;{est_head}"><span style="display:flex;gap:2px;flex-wrap:wrap;">{" ".join(badges)}</span><span style="font-weight:bold;white-space:nowrap;">{html.escape(titulo_etiqueta)}</span></div>'
 
         # Etiquetas especiales abajo
         esp = ""
