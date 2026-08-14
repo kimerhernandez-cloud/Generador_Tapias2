@@ -37,7 +37,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: DISTRIBUCIÓN INTELIGENTE + TÍTULO SIEMPRE VISIBLE
+# FUNCIÓN PRINCIPAL: MARCA DE AGUA + DISTRIBUCIÓN INTELIGENTE
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -164,15 +164,12 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         longitud_nombre = len(prefijo_nombre + nombre_mostrar)
         longitud_obs = len(obs_clean)
 
-        # ✅ DECISIÓN CLAVE: ¿APILAR O JUNTAR?
-        # Apilar uno debajo del otro SI hay POCA información
-        # Juntar en una línea SI nombre es LARGO O observaciones extensas
+        # ✅ DECISIÓN: APILAR O JUNTAR
         hay_mucha_info = (longitud_nombre > 20) or (longitud_obs > 50)
 
         cant_tags = sum([es_seguimiento,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario,es_alergia])
 
-        # Reducción inteligente de fuentes
-        total_caracteres = longitud_nombre + len(hab_str) + len(str(pax)) + len(hora) + longitud_obs + (cant_tags * 15)
+        # Tamaños de fuente
         if hay_mucha_info:
             ta, td, tb, to = "8.5pt", "8pt", "5pt", "5.5pt"
         else:
@@ -191,18 +188,15 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         # --- NOMBRE FINAL CON PREFIJO ---
         nombre_completo_mostrar = prefijo_nombre + nombre_mostrar
-        nombre_final = f'''<div style="font-weight:bold;font-size:{ta};line-height:1.15;margin-top:0.5mm;text-align:left;word-wrap:break-word;">{html.escape(nombre_completo_mostrar)}</div>'''
+        nombre_final = f'''<div style="font-weight:bold;font-size:{ta};line-height:1.15;text-align:left;word-wrap:break-word;">{html.escape(nombre_completo_mostrar)}</div>'''
 
-        # Cabecera con TÍTULO DEL RESTAURANTE SIEMPRE VISIBLE
-        cab_titulo = f'<div style="text-align:right;font-size:7pt;font-weight:bold;color:#333;margin-bottom:1px;">{html.escape(titulo_etiqueta)}</div>'
         cab_etiquetas = f'<div style="display:flex;flex-wrap:wrap;gap:2px;line-height:1.2;margin-bottom:1px;">{" ".join(badges_top)}</div>' if badges_top else ""
 
-        # --- DATOS: APILADOS O JUNTOS SEGÚN CONTENIDO ---
-        # Mesa grande = todo el bloque remarcado juntos
+        # --- DATOS: APILADOS O JUNTOS ---
         es_mesa_grande = pax >= limite_mesa_grande
 
         if hay_mucha_info:
-            # ✅ Juntar en una sola línea para ahorrar espacio
+            # Juntar en línea
             if es_mesa_grande:
                 bloque_datos = f'''<div style="font-size:{td};line-height:1.2;margin:2px 0;border:1.5px solid #c00;padding:2px 4px;border-radius:3px;background:#FFECEC;display:flex;flex-wrap:wrap;gap:6px;">
                     <span><b>Hab:</b> {html.escape(hab_str)}</span>
@@ -216,7 +210,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
                     <span><b>Hora:</b> {hora}</span>
                 </div>'''
         else:
-            # ✅ Apilados uno debajo del otro para mejor lectura
+            # Apilados uno debajo del otro
             if es_mesa_grande:
                 bloque_datos = f'''<div style="font-size:{td};line-height:1.3;margin:2px 0;border:1.5px solid #c00;padding:3px 5px;border-radius:3px;background:#FFECEC;">
                     <div><b>Hab:</b> {html.escape(hab_str)}</div>
@@ -233,16 +227,16 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         # Etiquetas especiales abajo
         esp = ""
         if es_hbd:
-            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#c00;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎂 HBD</div>'
+            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#c00;margin:0.3mm 0;white-space:nowrap;">🎂 HBD</div>'
             obs_clean=""
         if es_aniversario and not es_hbd:
-            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#800080;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">💍 ANIVERSARIO</div>'
+            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#800080;margin:0.3mm 0;white-space:nowrap;">💍 ANIVERSARIO</div>'
             obs_clean=""
         if es_ns and not es_hbd and not es_aniversario:
-            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#006;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🆕 NUEVO SOCIO</div>'
+            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#006;margin:0.3mm 0;white-space:nowrap;">🆕 NUEVO SOCIO</div>'
             obs_clean=""
         if es_daypass and not es_hbd and not es_aniversario:
-            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.5mm 0 0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
+            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
 
         ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.2mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
@@ -251,13 +245,17 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         h_clave = hora[:5]
         if h_clave: reporte_horas[h_clave] = reporte_horas.get(h_clave,0) + pax
 
-        # Tarjeta final
-        cards.append(f'''<div style="width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.8mm;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;gap:0.3mm;page-break-inside:avoid;">
-{cab_titulo}
+        # ✅ TARJETA FINAL CON MARCA DE AGUA DETRÁS
+        marca_agua = f'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18pt;font-weight:bold;color:rgba(180,180,180,0.15);pointer-events:none;white-space:nowrap;z-index:0;">{html.escape(titulo_etiqueta)}</div>'
+
+        cards.append(f'''<div style="position:relative;width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.8mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.2mm;page-break-inside:avoid;">
+{marca_agua}
+<div style="position:relative;z-index:1;">
 {cab_etiquetas}
 {nombre_final}
 {bloque_datos}
 {ch}{esp}{obs_html}
+</div>
 </div>'''.replace('\n',''))
 
     # Reporte final por horas
