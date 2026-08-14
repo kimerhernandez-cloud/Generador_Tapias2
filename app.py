@@ -7,7 +7,7 @@ st.set_page_config(page_title="Generador de Tapias", layout="wide")
 st.title("🎪 Generador de Etiquetas / Tapias by MH")
 
 # -----------------------------------------------------------------------------
-# ✅ FUNCIÓN DE NOMBRES: TODO COMPLETAMENTE EN MAYÚSCULAS
+# FUNCIÓN DE NOMBRES EN MAYÚSCULAS
 # -----------------------------------------------------------------------------
 def obtener_nombre_mostrar(nombre_completo):
     if pd.isna(nombre_completo):
@@ -37,7 +37,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: HAB+PX SIEMPRE JUNTOS EN MISMA LÍNEA
+# FUNCIÓN PRINCIPAL — DOS RENGLONES, SIN ESPACIOS VACÍOS
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -49,7 +49,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         'pax': 'sum', 'hora': 'first', 'observaciones': 'first'
     }).reset_index()
 
-    # 📏 TAMAÑOS BASE — TAPIA CHICA: +1cm ANCHO | 7×8
+    # 📏 TAMAÑOS — TAPIA CHICA: +1cm ANCHO, 7×8
     if tam_tapia == "Grande":
         alto_tarjeta = "29mm" if orientacion == "Horizontal" else "27mm"
         cols_grid = 6
@@ -64,7 +64,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         base_datos = "9pt"
         base_badges = "5.5pt"
         base_obs = "6pt"
-    else:  # ✅ CHICA: +1cm ANCHO, 7 columnas × 8 filas
+    else:
         alto_tarjeta = "24mm"
         cols_grid = 7
         base_apellido = "9pt"
@@ -92,7 +92,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         except: pax = 1
         total_pax += pax
 
-        # Detección de personas desde observaciones
+        # Detección de personas
         for pat, val in [
             (r'22\s*PAX',22),(r'SON\s*PAX\s*0?7',7),(r'SON\s*0?3\s*PAX',3),
             (r'SON\s*4\s*PAX',4),(r'SON\s*10\s*PAX|10\s*PAX',10),(r'SON\s*5\s*PAX',5),
@@ -130,7 +130,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
                 if re.search(pat, obs_full, re.I):
                     hora, cambio_horario = hh, True; break
 
-        # ✅ DETECCIÓN DE ETIQUETAS EN OBSERVACIONES
+        # ✅ DETECCIÓN DE ETIQUETAS
         obs_upper = obs_full.upper()
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMOND', obs_upper))
@@ -148,7 +148,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         obs_clean = limpiar_obs_base(obs_full)
 
-        # ✅ BORDE AZUL CIELO para DIAMANTE / RESIDENCE
+        # ✅ BORDE AZUL para especiales
         if es_residence or es_diamante:
             borde_tarjeta = "border:4px solid #87CEEB;"
         else:
@@ -157,7 +157,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         # ✅ COLOR AZUL FUERTE para nombre especial
         color_nombre = "#0047AB" if (es_diamante or es_residence or es_ns) else "#000000"
 
-        # ✅ ETIQUETA: SIEMPRE APARECE → al principio o AL FINAL si no cabe
+        # ✅ ETIQUETA SIEMPRE VISIBLE → al principio o al final
         etiqueta_texto = ""
         if es_diamante:
             etiqueta_texto = "💎 DIAMANTE"
@@ -166,7 +166,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         elif es_ns:
             etiqueta_texto = "🆕 NUEVO SOCIO"
 
-        # Decidir: ¿poner al principio o al final?
         longitud_estimada = len(nombre_mostrar) + len(etiqueta_texto) + 3
         if longitud_estimada <= 28:
             nombre_completo_mostrar = f"{etiqueta_texto} — {nombre_mostrar}"
@@ -175,38 +174,29 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         longitud_nombre = len(nombre_completo_mostrar)
         longitud_obs = len(obs_clean)
-
-        # ✅ DECISIÓN: APILAR O JUNTAR según contenido
         hay_mucha_info = (longitud_nombre > 28) or (longitud_obs > 50)
 
-        cant_tags = sum([es_seguimiento,es_hbd,es_aniversario,es_daypass,es_privado,es_grupo,cambio_horario,es_alergia])
-
-        # Tamaños de fuente adaptables
+        # Tamaños de fuente
         if hay_mucha_info:
             ta, td, tb, to = "8.5pt", "8pt", "5pt", "5.5pt"
         else:
             ta, td, tb, to = base_apellido, base_datos, base_badges, base_obs
 
-        # Estilos etiquetas de aviso
+        # Estilos avisos
         b_azul = f"display:inline-block;border:1px solid #4682B4;background:#E0F7FF;color:#005580;padding:1px 3px;border-radius:2px;font-size:{tb};font-weight:bold;margin:0 3px;"
         b_naranja = b_azul.replace("#E0F7FF","#FFF3E0").replace("#4682B4","#F57C00").replace("#005580","#E65100")
         b_verde = b_azul.replace("#E0F7FF","#E8F5E9").replace("#4682B4","#2E7D32").replace("#005580","#1B5E20")
 
-        # Etiquetas que van arriba
         badges_top = []
         if es_seguimiento: badges_top.append(f'<span style="{b_naranja}">🛑 SEGUIMIENTO</span>')
         if es_grupo: badges_top.append(f'<span style="{b_verde}">👥 GRUPO</span>')
         if es_alergia: badges_top.append(f'<span style="display:inline-block;padding:1px 3px;border-radius:2px;background:#FFF3E0;border:1px solid #F57C00;color:#C00;font-size:{tb};font-weight:bold;margin:0 3px;">⚠️ ALERGIAS</span>')
 
-        # --- NOMBRE FINAL CON COLOR AZUL ---
         nombre_final = f'''<div style="font-weight:bold;font-size:{ta};line-height:1.15;text-align:left;word-wrap:break-word;color:{color_nombre};">{html.escape(nombre_completo_mostrar)}</div>'''
-
         cab_etiquetas = f'<div style="display:flex;flex-wrap:wrap;gap:2px;line-height:1.2;margin-bottom:1px;">{" ".join(badges_top)}</div>' if badges_top else ""
 
-        # ✅ HAB + PX SIEMPRE JUNTOS EN LA MISMA LÍNEA
+        # ✅ HAB + PX → RENGLÓN 1 · HORA → RENGLÓN 2 · SIN ESPACIO VACÍO ENTRE ELLOS
         es_mesa_grande = pax >= limite_mesa_grande
-
-        # Bloque Hab+PX SIEMPRE juntos
         hab_px_line = f'<b>Hab:</b> {html.escape(hab_str)} · <b>PX:</b> {pax}'
 
         if es_mesa_grande:
@@ -214,43 +204,34 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         else:
             hab_px_marcado = f'<span>{hab_px_line}</span>'
 
-        # Hora por separado, al lado o debajo
-        if hay_mucha_info:
-            # En línea: Hab+PX · Hora
-            bloque_datos = f'''<div style="font-size:{td};line-height:1.2;margin:2px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-                {hab_px_marcado}
-                <span><b>Hora:</b> {hora}</span>
-            </div>'''
-        else:
-            # Apilado: Hab+PX juntos arriba, Hora debajo
-            bloque_datos = f'''<div style="font-size:{td};line-height:1.3;margin:2px 0;">
-                <div>{hab_px_marcado}</div>
-                <div style="margin-top:2px;"><b>Hora:</b> {hora}</div>
-            </div>'''
+        # ✅ DOS RENGLONES PEGADOS — margin-top:0px ENTRE ELLOS
+        bloque_datos = f'''<div style="font-size:{td};line-height:1.15;margin:2px 0;">
+            <div>{hab_px_marcado}</div>
+            <div style="margin-top:0px;"><b>Hora:</b> {hora}</div>
+        </div>'''
 
         # Etiquetas especiales abajo
         esp = ""
         if es_hbd:
-            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#c00;margin:0.3mm 0;white-space:nowrap;">🎂 HBD</div>'
+            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#c00;margin:0.2mm 0;white-space:nowrap;">🎂 HBD</div>'
             obs_clean=""
         if es_aniversario and not es_hbd:
-            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#800080;margin:0.3mm 0;white-space:nowrap;">💍 ANIVERSARIO</div>'
+            esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#800080;margin:0.2mm 0;white-space:nowrap;">💍 ANIVERSARIO</div>'
             obs_clean=""
         if es_daypass and not es_hbd and not es_aniversario:
-            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
+            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.2mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
 
         ch = f'<div style="color:#c00;font-weight:bold;font-size:{tb};margin:0.2mm 0;text-align:left;">⚠️ CAMBIO DE HORARIO</div>' if cambio_horario else ""
-        obs_html = f'<div style="font-size:{to};line-height:1.2;overflow-wrap:break-word;margin-top:0.1mm;text-align:left;color:#008000;font-weight:500;">{html.escape(obs_clean)}</div>' if obs_clean else ""
+        obs_html = f'<div style="font-size:{to};line-height:1.15;overflow-wrap:break-word;margin-top:0.2mm;text-align:left;color:#008000;font-weight:500;">{html.escape(obs_clean)}</div>' if obs_clean else ""
 
         h_clave = hora[:5]
         if h_clave: reporte_horas[h_clave] = reporte_horas.get(h_clave,0) + pax
 
-        # ✅ MARCA DE AGUA MUY TENUE
-        marca_agua = f'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18pt;font-weight:bold;color:rgba(160,160,160,0.06);pointer-events:none;white-space:nowrap;z-index:0;">{html.escape(titulo_etiqueta)}</div>'
+        # ✅ MARCA DE AGUA HERMOSA DETRÁS
+        marca_agua = f'''<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20pt;font-weight:bold;color:rgba(120,120,120,0.12);pointer-events:none;white-space:nowrap;z-index:0;">{html.escape(titulo_etiqueta)}</div>'''
 
-        # Tarjeta final
-        cards.append(f'''<div style="position:relative;width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.8mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.2mm;page-break-inside:avoid;">
+        cards.append(f'''<div style="position:relative;width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.8mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0mm;page-break-inside:avoid;">
 {marca_agua}
 <div style="position:relative;z-index:1;">
 {cab_etiquetas}
@@ -260,7 +241,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 </div>
 </div>'''.replace('\n',''))
 
-    # Reporte final por horas
+    # Reporte por horas
     horas_ordenadas = sorted(reporte_horas.keys())
     total_horas = len(horas_ordenadas)
     max_por_tapia = 14
