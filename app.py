@@ -37,7 +37,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: ETIQUETAS EN LÍNEA CON NOMBRE + FILA DATOS COMPACTA
+# FUNCIÓN PRINCIPAL: ETIQUETA ANTES DEL NOMBRE + HAB/PX/HORA SIEMPRE JUNTOS
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -154,22 +154,28 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         else:
             borde_tarjeta = "border:1px solid #000;"
 
-        # --- DECIDIR: etiquetas en línea con el nombre ---
+        # --- CONSTRUIR NOMBRE CON ETIQUETA AL PRINCIPIO ---
+        # 💎 DIAMANTE / 🔑 RESIDENCE VAN ANTES DEL NOMBRE EN LA MISMA LÍNEA
+        prefijo_nombre = ""
+        if es_diamante:
+            prefijo_nombre = "💎 DIAMANTE — "
+        elif es_residence:
+            prefijo_nombre = "🔑 RESIDENCE — "
+        # Alergias se mantiene como etiqueta visual aparte
+        tiene_etiqueta_nombre = bool(prefijo_nombre)
+
         longitud_nombre = len(nombre_mostrar)
         longitud_obs = len(obs_clean)
-        # Colocar etiquetas Residence/Diamante/Alergias en línea si:
-        # - nombre CORTO (<10 caracteres) OBSERVACIONES LARGAS
-        etiquetas_en_linea = (longitud_nombre < 10) or (longitud_obs > 60)
 
-        cant_tags = sum([es_seguimiento,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario])
+        cant_tags = sum([es_seguimiento,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario,es_alergia])
 
         # Reducción inteligente de fuentes
-        total_caracteres = longitud_nombre + len(hab_str) + len(str(pax)) + len(hora) + longitud_obs + (cant_tags * 15)
+        total_caracteres = longitud_nombre + len(prefijo_nombre) + len(hab_str) + len(str(pax)) + len(hora) + longitud_obs + (cant_tags * 15)
 
         if total_caracteres > 200 or cant_tags >=4 or longitud_obs>130 or longitud_nombre>20:
-            ta, td, tb, to = "8pt", "7.8pt", "5pt", "5.5pt"
+            ta, td, tb, to = "8pt", "8pt", "5pt", "5.5pt"
         elif total_caracteres > 150 or cant_tags >=3 or longitud_obs>90 or longitud_nombre>15:
-            ta, td, tb, to = "8.8pt", "8.2pt", "5.5pt", "6pt"
+            ta, td, tb, to = "8.8pt", "8.5pt", "5.5pt", "6pt"
         elif total_caracteres > 90 or cant_tags >=2 or longitud_obs>50 or longitud_nombre>12:
             ta, td, tb, to = base_apellido, "9pt", "6pt", "6.5pt"
         else:
@@ -180,43 +186,32 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         b_naranja = b_azul.replace("#E0F7FF","#FFF3E0").replace("#4682B4","#F57C00").replace("#005580","#E65100")
         b_verde = b_azul.replace("#E0F7FF","#E8F5E9").replace("#4682B4","#2E7D32").replace("#005580","#1B5E20")
 
-        # Etiquetas que VAN AL LADO DEL NOMBRE
-        tags_nombre = []
-        if es_residence: tags_nombre.append(f'<span style="{b_azul}">🔑 RESIDENCE</span>')
-        if es_diamante: tags_nombre.append(f'<span style="{b_azul}">💎 DIAMANTE</span>')
-        if es_alergia: tags_nombre.append(f'<span style="display:inline-block;padding:1px 3px;border-radius:2px;background:#FFF3E0;border:1px solid #F57C00;color:#C00;font-size:{tb};font-weight:bold;margin:0 3px;">⚠️ ALERGIAS</span>')
-
-        # Etiquetas que quedan arriba (resto)
+        # Etiquetas que van arriba
         badges_top = []
         if es_seguimiento: badges_top.append(f'<span style="{b_naranja}">🛑 SEGUIMIENTO</span>')
         if es_grupo: badges_top.append(f'<span style="{b_verde}">👥 GRUPO</span>')
+        if es_alergia: badges_top.append(f'<span style="display:inline-block;padding:1px 3px;border-radius:2px;background:#FFF3E0;border:1px solid #F57C00;color:#C00;font-size:{tb};font-weight:bold;margin:0 3px;">⚠️ ALERGIAS</span>')
 
-        # --- NOMBRE + ETIQUETAS EN LÍNEA ---
-        if etiquetas_en_linea and tags_nombre:
-            nombre_final = f'''<div style="display:flex;align-items:center;flex-wrap:wrap;gap:1px;line-height:1.1;font-weight:bold;font-size:{ta};margin-top:0.1mm;">
-                <span>{html.escape(nombre_mostrar)}</span>
-                {" ".join(tags_nombre)}
-            </div>'''
-        else:
-            # Etiquetas en bloque arriba del nombre
-            bloque_tags_nombre = f'<div style="margin:1px 0;line-height:1.2;">{" ".join(tags_nombre)}</div>' if tags_nombre else ""
-            nombre_final = f'''{bloque_tags_nombre}
-            <div style="font-weight:bold;font-size:{ta};line-height:1.05;margin-top:0.1mm;text-align:left;">{html.escape(nombre_mostrar)}</div>'''
+        # --- NOMBRE FINAL CON PREFIJO EN LA MISMA LÍNEA ---
+        nombre_completo_mostrar = prefijo_nombre + nombre_mostrar
+        nombre_final = f'''<div style="font-weight:bold;font-size:{ta};line-height:1.1;margin-top:0.1mm;text-align:left;word-wrap:break-word;">{html.escape(nombre_completo_mostrar)}</div>'''
 
         # Cabecera con etiquetas de aviso
-        cab = f'<div style="display:flex;flex-wrap:wrap;gap:2px;line-height:1.1;">{" ".join(badges_top)}</div>'
+        cab = f'<div style="display:flex;flex-wrap:wrap;gap:2px;line-height:1.2;margin-bottom:1px;">{" ".join(badges_top)}</div>' if badges_top else ""
 
-        # --- FILA DE DATOS COMPACTA: Hab · PX · Hora ---
-        # Resaltado mesas grandes
+        # --- HAB · PX · HORA SIEMPRE JUNTOS EN UNA SOLA LÍNEA ---
+        # Si es mesa grande, se remarca TODO el bloque en rojo juntos
         if pax >= limite_mesa_grande:
-            estilo_pax = ";border:1.5px solid #c00;padding:1px 3px;border-radius:3px;background:#FFECEC;"
+            estilo_bloque = "border:1.5px solid #c00; padding:2px 4px; border-radius:3px; background:#FFECEC; display:inline-flex; flex-wrap:wrap; gap:6px;"
         else:
-            estilo_pax = ""
+            estilo_bloque = "display:flex; flex-wrap:wrap; gap:6px;"
 
-        datos_linea = f'''<div style="font-size:{td};display:flex;flex-wrap:wrap;gap:4px;line-height:1.2;margin:1px 0;">
-            <span><b>Hab:</b> {html.escape(hab_str)}</span>
-            <span style="white-space:nowrap;{estilo_pax}"><b>PX:</b> {pax}</span>
-            <span><b>Hora:</b> {hora}</span>
+        datos_linea = f'''<div style="font-size:{td}; line-height:1.2; margin:2px 0;">
+            <div style="{estilo_bloque}">
+                <span><b>Hab:</b> {html.escape(hab_str)}</span>
+                <span><b>PX:</b> {pax}</span>
+                <span><b>Hora:</b> {hora}</span>
+            </div>
         </div>'''
 
         # Etiquetas especiales abajo
