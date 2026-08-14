@@ -37,7 +37,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: MARCA DE AGUA + DISTRIBUCIÓN INTELIGENTE
+# FUNCIÓN PRINCIPAL: NOMBRE EN AZUL + MARCA DE AGUA MÁS TENUE
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -134,6 +134,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         obs_upper = obs_full.upper()
         es_residence = bool(re.search(r'RESIDENCE|S\.\s*RESIDENCE', obs_upper))
         es_diamante = bool(re.search(r'DIAMANTE|DIAMOND', obs_upper))
+        es_ns = bool(re.search(r'nuevos?\s+socios?|new members|new guest', obs_full, re.I))
         tiene_excl = bool(re.search(r'SIN\s+ALERGIAS|NO\s+ALERGIES|CONFIRMAR', obs_upper))
         tiene_rest = bool(re.search(r'CELIACO|GLUTEN|ALERGIA|ALERGY|SHELLFISH|NUTS|VEGETARIAN|VEGAN|DIABETES|NO PORK', obs_upper))
         es_alergia = tiene_rest and not tiene_excl
@@ -142,7 +143,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         es_hbd = bool(re.search(r'cumpleaños|cumple\s+año|cumple\s+años|birthday|birth\s+day', obs_full, re.I))
         es_aniversario = bool(re.search(r'aniversario|aniversarios|anniversary', obs_full, re.I))
         es_grupo = bool(re.search(r'sentar juntos|compartir mesa|grupo|together|same table|group', obs_upper))
-        es_ns = bool(re.search(r'nuevos?\s+socios?|new members|new guest', obs_full, re.I))
         es_daypass = bool(re.search(r'day pass|visitor|external guest', obs_full, re.I))
         es_privado = bool(re.search(r'privado|private|vip', obs_upper))
 
@@ -154,12 +154,17 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         else:
             borde_tarjeta = "border:1px solid #000;"
 
+        # ✅ DEFINIR COLOR DE NOMBRE: AZUL FUERTE si DIAMANTE / RESIDENCE / NS
+        color_nombre = "#0047AB" if (es_diamante or es_residence or es_ns) else "#000000"
+
         # --- CONSTRUIR NOMBRE CON ETIQUETA AL PRINCIPIO ---
         prefijo_nombre = ""
         if es_diamante:
             prefijo_nombre = "💎 DIAMANTE — "
         elif es_residence:
             prefijo_nombre = "🔑 RESIDENCE — "
+        elif es_ns:
+            prefijo_nombre = "🆕 NUEVO SOCIO — "
 
         longitud_nombre = len(prefijo_nombre + nombre_mostrar)
         longitud_obs = len(obs_clean)
@@ -167,7 +172,7 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         # ✅ DECISIÓN: APILAR O JUNTAR
         hay_mucha_info = (longitud_nombre > 20) or (longitud_obs > 50)
 
-        cant_tags = sum([es_seguimiento,es_hbd,es_aniversario,es_ns,es_daypass,es_privado,es_grupo,cambio_horario,es_alergia])
+        cant_tags = sum([es_seguimiento,es_hbd,es_aniversario,es_daypass,es_privado,es_grupo,cambio_horario,es_alergia])
 
         # Tamaños de fuente
         if hay_mucha_info:
@@ -186,9 +191,9 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_grupo: badges_top.append(f'<span style="{b_verde}">👥 GRUPO</span>')
         if es_alergia: badges_top.append(f'<span style="display:inline-block;padding:1px 3px;border-radius:2px;background:#FFF3E0;border:1px solid #F57C00;color:#C00;font-size:{tb};font-weight:bold;margin:0 3px;">⚠️ ALERGIAS</span>')
 
-        # --- NOMBRE FINAL CON PREFIJO ---
+        # --- NOMBRE FINAL CON PREFIJO Y COLOR AZUL ---
         nombre_completo_mostrar = prefijo_nombre + nombre_mostrar
-        nombre_final = f'''<div style="font-weight:bold;font-size:{ta};line-height:1.15;text-align:left;word-wrap:break-word;">{html.escape(nombre_completo_mostrar)}</div>'''
+        nombre_final = f'''<div style="font-weight:bold;font-size:{ta};line-height:1.15;text-align:left;word-wrap:break-word;color:{color_nombre};">{html.escape(nombre_completo_mostrar)}</div>'''
 
         cab_etiquetas = f'<div style="display:flex;flex-wrap:wrap;gap:2px;line-height:1.2;margin-bottom:1px;">{" ".join(badges_top)}</div>' if badges_top else ""
 
@@ -232,9 +237,6 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         if es_aniversario and not es_hbd:
             esp='<div style="font-weight:bold;font-size:7pt;text-align:center;color:#800080;margin:0.3mm 0;white-space:nowrap;">💍 ANIVERSARIO</div>'
             obs_clean=""
-        if es_ns and not es_hbd and not es_aniversario:
-            esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#006;margin:0.3mm 0;white-space:nowrap;">🆕 NUEVO SOCIO</div>'
-            obs_clean=""
         if es_daypass and not es_hbd and not es_aniversario:
             esp='<div style="font-weight:bold;font-size:6.5pt;text-align:center;color:#333;margin:0.3mm 0;white-space:nowrap;">🎟️ DAY PASS</div>'
             obs_clean=""
@@ -245,9 +247,10 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
         h_clave = hora[:5]
         if h_clave: reporte_horas[h_clave] = reporte_horas.get(h_clave,0) + pax
 
-        # ✅ TARJETA FINAL CON MARCA DE AGUA DETRÁS
-        marca_agua = f'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18pt;font-weight:bold;color:rgba(180,180,180,0.15);pointer-events:none;white-space:nowrap;z-index:0;">{html.escape(titulo_etiqueta)}</div>'
+        # ✅ MARCA DE AGUA MÁS TENUE (casi transparente)
+        marca_agua = f'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18pt;font-weight:bold;color:rgba(160,160,160,0.08);pointer-events:none;white-space:nowrap;z-index:0;">{html.escape(titulo_etiqueta)}</div>'
 
+        # Tarjeta final
         cards.append(f'''<div style="position:relative;width:100%;height:100%;{borde_tarjeta}box-sizing:border-box;padding:1.8mm;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:0.2mm;page-break-inside:avoid;">
 {marca_agua}
 <div style="position:relative;z-index:1;">
