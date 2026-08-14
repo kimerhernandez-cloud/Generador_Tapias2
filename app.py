@@ -37,7 +37,7 @@ def obtener_nombre_completo_seguro(valor):
     return "" if pd.isna(valor) else str(valor).strip()
 
 # -----------------------------------------------------------------------------
-# FUNCIÓN PRINCIPAL: ETIQUETA SIEMPRE VISIBLE + BLOQUE ROJO SOLO HAB+PX + TAPIA CHICA 7×8
+# FUNCIÓN PRINCIPAL: HAB+PX SIEMPRE JUNTOS EN MISMA LÍNEA
 # -----------------------------------------------------------------------------
 def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia):
     columnas_requeridas = ['nombre_reserva', 'habitacion', 'pax', 'hora', 'observaciones']
@@ -203,35 +203,28 @@ def generar_html(df, titulo_etiqueta, limite_mesa_grande, orientacion, tam_tapia
 
         cab_etiquetas = f'<div style="display:flex;flex-wrap:wrap;gap:2px;line-height:1.2;margin-bottom:1px;">{" ".join(badges_top)}</div>' if badges_top else ""
 
-        # ✅ BLOQUE ROJO SOLO HAB + PX → HORA POR SEPARADO
+        # ✅ HAB + PX SIEMPRE JUNTOS EN LA MISMA LÍNEA
         es_mesa_grande = pax >= limite_mesa_grande
 
+        # Bloque Hab+PX SIEMPRE juntos
+        hab_px_line = f'<b>Hab:</b> {html.escape(hab_str)} · <b>PX:</b> {pax}'
+
+        if es_mesa_grande:
+            hab_px_marcado = f'<span style="border:1.5px solid #c00;padding:2px 5px;border-radius:3px;background:#FFECEC;white-space:nowrap;">{hab_px_line}</span>'
+        else:
+            hab_px_marcado = f'<span>{hab_px_line}</span>'
+
+        # Hora por separado, al lado o debajo
         if hay_mucha_info:
-            # En línea
-            if es_mesa_grande:
-                bloque_hab_px = f'''<span style="border:1.5px solid #c00;padding:2px 4px;border-radius:3px;background:#FFECEC;display:inline-flex;gap:6px;">
-                    <b>Hab:</b> {html.escape(hab_str)} · <b>PX:</b> {pax}
-                </span>'''
-            else:
-                bloque_hab_px = f'''<span><b>Hab:</b> {html.escape(hab_str)} · <b>PX:</b> {pax}</span>'''
-            bloque_datos = f'''<div style="font-size:{td};line-height:1.2;margin:2px 0;display:flex;flex-wrap:wrap;gap:8px;">
-                {bloque_hab_px}
+            # En línea: Hab+PX · Hora
+            bloque_datos = f'''<div style="font-size:{td};line-height:1.2;margin:2px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                {hab_px_marcado}
                 <span><b>Hora:</b> {hora}</span>
             </div>'''
         else:
-            # Apilados
-            if es_mesa_grande:
-                bloque_hab_px = f'''<div style="border:1.5px solid #c00;padding:3px 5px;border-radius:3px;background:#FFECEC;display:inline-block;">
-                    <div><b>Hab:</b> {html.escape(hab_str)}</div>
-                    <div><b>PX:</b> {pax}</div>
-                </div>'''
-            else:
-                bloque_hab_px = f'''<div>
-                    <div><b>Hab:</b> {html.escape(hab_str)}</div>
-                    <div><b>PX:</b> {pax}</div>
-                </div>'''
+            # Apilado: Hab+PX juntos arriba, Hora debajo
             bloque_datos = f'''<div style="font-size:{td};line-height:1.3;margin:2px 0;">
-                {bloque_hab_px}
+                <div>{hab_px_marcado}</div>
                 <div style="margin-top:2px;"><b>Hora:</b> {hora}</div>
             </div>'''
 
